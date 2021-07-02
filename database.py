@@ -1,5 +1,3 @@
-import time
-
 from sqlalchemy import create_engine
 
 from user import User
