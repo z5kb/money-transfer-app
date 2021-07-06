@@ -4,7 +4,18 @@
     <meta charset="UTF-8">
     <title>Register</title>
 </head>
+
 <body>
+    {% with messages= get_flashed_messages() %}
+        {% if messages %}
+            <p>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </p>
+        {% endif %}
+    {% endwith %}
+
     <form method="post">
         <label>Username
             <input type="text" name="username" required>

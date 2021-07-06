@@ -1,23 +1,17 @@
 from werkzeug.security import check_password_hash
-from app import psql
 
 
-class User(psql.Model):
-    __tablename__ = 'Users'
-
-    id = psql.Column(psql.Integer, primary_key=True)
-    name = psql.Column(psql.String())
-    password = psql.Column(psql.String())
-
-    def __init__(self, name, password):
-        self.__name = name
+class User:
+    def __init__(self, user_id, email, password, role, balance, has_to_reload_page=False):
+        self.__id = user_id
+        self.__email = email
         self.__password = password
+        self.__role = role
+        self.__balance = balance
+        self.__has_to_reload_page = has_to_reload_page
 
-    def __repr__(self):
-        return '<id {}>'.format(self.id)
-
-    def get_name(self):
-        return self.__name
+    def get_email(self):
+        return self.__email
 
     def get_password(self):
         return self.__password
@@ -35,4 +29,16 @@ class User(psql.Model):
         return False
 
     def get_id(self):
-        return self.__name
+        return self.__id
+
+    def get_role(self):
+        return self.__role
+
+    def get_balance(self):
+        return self.__balance
+
+    def set_balance(self, new_balance):
+        self.__balance = new_balance
+
+    def has_to_reload_page(self):
+        return self.__has_to_reload_page
