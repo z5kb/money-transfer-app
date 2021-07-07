@@ -11,6 +11,37 @@
 <body onload="">
     <h2>{{ user.get_balance() }} EUR</h2>
 
+    <button class="open-button" onclick="openForm()">Create Transaction</button>
+
+    <div class="form-popup" id="myForm">
+        <form id="newTransactionForm" action="/api/create_transaction" class="form-container" method="post">
+            <h1>Create a new transaction</h1>
+
+            <label><b>Change in your balance</b>
+                <input type="text" placeholder="ex.: -5" name="change_in_balance" required>
+            </label>
+
+            <div id="transferReceiversDiv" style="background: lightblue">
+                <h3 id="transferReceiversHeader">Transfer receivers 0/1</h3>
+                <p id="emptySetPlaceholder" style="color: #888487">Select a user below...</p>
+            </div>
+
+            <input type="text" id="searchUsersInput" onkeyup="dynamicSearch()" placeholder="Search for users..."
+                   title="Type in a name">
+
+            <div class="scrollable">
+                <table id="usersTable">
+                    <tr class="header">
+                        <th>Name</th>
+                    </tr>
+                </table>
+            </div>
+
+            <button id="newTransactionSubmitButton" type="submit" class="btn">Done</button>
+            <button type="button" class="btn cancel" onclick="closeForm()">Cancel</button>
+        </form>
+    </div>
+
 {##}
 {#    <div class="settingsDropdown">#}
 {#        <button class="settingsDropdownButton" onclick="toggleSettingsDropdownContentsVisibility()">Profile</button>#}
@@ -21,20 +52,7 @@
 {##}
 {#    <a href="/logout">Logout</a>#}
 {##}
-{#    <input type="text" id="searchUsersInput" onkeyup="dynamicSearch()" placeholder="Search for names.."#}
-{#           title="Type in a name">#}
-{##}
-{#    <table id="usersTable">#}
-{#        <tr class="header">#}
-{#            <th>Name</th>#}
-{#        </tr>#}
-{#        <tr>#}
-{#            <td>Devin</td>#}
-{#        </tr>#}
-{#        <tr>#}
-{#            <td>Baldaran</td>#}
-{#        </tr>#}
-{#    </table>#}
+
 
     <table>
         {% for t in transactions %}

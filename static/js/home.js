@@ -1,4 +1,6 @@
 let users;
+let usersGotLoaded = 0;
+let transferReceiverGotChosen = 0;
 let ping;
 
 function loadUsers() {
@@ -30,8 +32,25 @@ function getUsers() {
 
 // render the users on the page
 function renderUsers() {
-    // TODO insert as table element, not plain text
-    $("#usersTable").append(users[0])
+    for(let i = 0; i < users.length; i++) {
+        $('#usersTable tr:last').after('<tr><td style="width: 15%">' +
+            '<button type="button" onclick="addUserToTransferReceivers(' + i + ')">Add</button>' +
+            '</td><td>' + users[i][1] + '</td></tr>');
+    }
+    usersGotLoaded = 1;
+}
+
+function addUserToTransferReceivers(i) {
+    if(transferReceiverGotChosen === 1) {
+        $("#transferReceiver").remove();
+        $("#user2_id").remove();
+    } else {
+        $("#emptySetPlaceholder").remove();
+        $("#transferReceiversHeader").text("Transfer receivers 1/1");
+        transferReceiverGotChosen = 1;
+    }
+    $("#newTransactionForm").append('<input id="user2_id" type="hidden" name="user2_id" value="' + users[i][0] + '">');
+    $('<p id="transferReceiver">' + users[i][1] + '</p>').appendTo("#transferReceiversDiv");
 }
 
 // dynamically search through users
@@ -42,7 +61,7 @@ function dynamicSearch() {
     let rows = table.getElementsByTagName("tr");
 
     for (let i = 0; i < rows.length; i++) {
-        let td = rows[i].getElementsByTagName("td")[0];
+        let td = rows[i].getElementsByTagName("td")[1];
         if (td) {
             let txtValue = td.textContent || td.innerText;
             if (txtValue.toLowerCase().indexOf(filter) > -1) {
@@ -106,4 +125,15 @@ window.onclick = function (event) {
             }
         }
     }
+}
+
+function openForm() {
+    document.getElementById("myForm").style.display = "block";
+    if(usersGotLoaded === 0) {
+        loadUsers();
+    }
+}
+
+function closeForm() {
+    document.getElementById("myForm").style.display = "none";
 }

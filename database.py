@@ -26,8 +26,12 @@ class Database:
 
         user1 = User(1, '1st', generate_password_hash('1'), "user", 0)
         self.add_user(user1)
-        user2 = User(1, '2nd', generate_password_hash('2'), "user", 5)
+        user2 = User(2, '2nd', generate_password_hash('2'), "user", 5)
         self.add_user(user2)
+        user3 = User(3, '3rd', generate_password_hash('3'), "user", 8)
+        self.add_user(user3)
+        user4 = User(4, '4th', generate_password_hash('4'), "user", 9)
+        self.add_user(user4)
 
         # user1 is the initiator of the transfer, user2 is the receiver
         db.execute("DROP TYPE IF EXISTS transaction_status_enum;")
@@ -75,7 +79,7 @@ class Database:
         users = []
         for r in rows:
             if current_user.get_email() != r[1]:
-                users.append([r[1]])
+                users.append([r[0], r[1]])
         return users
 
     @staticmethod
@@ -101,6 +105,13 @@ class Database:
         for r in rows:
             transactions.append([r[0], r[1], r[2], r[3], r[4], r[5]])
         return transactions
+
+    @staticmethod
+    def create_transaction(t):
+        print(t.get_user1_id, t.get_user2_id(), t.get_user1_change(), t.get_user2_change())
+        db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES({}, {}, {}, {})"
+                   .format(t.get_user1_id(), t.get_user2_id(), t.get_user1_change(), t.get_user2_change()))
+        return True
 
     @staticmethod
     def complete_transaction(action, transaction_id):
@@ -132,6 +143,14 @@ class Database:
     @staticmethod
     def get_users_count():
         rows = db.execute("SELECT COUNT(id) FROM Users;")
+
+        for r in rows:
+            return r[0]
+        return None
+
+    @staticmethod
+    def get_transactions_count():
+        rows = db.execute("SELECT COUNT(id) FROM Transactions;")
 
         for r in rows:
             return r[0]

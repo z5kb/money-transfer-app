@@ -14,6 +14,7 @@ app.secret_key = "todo-this-really-needs-to-be-changed"
 psql = SQLAlchemy(app)
 
 from user import User
+from transaction import Transaction
 from database import Database
 
 db = Database()
@@ -122,18 +123,19 @@ def api_get_transactions():
     return response
 
 
-# @login_required
-# @app.route("/api/create_transaction", methods=["POST"])
-# def api_create_transaction():
-#     try:
-#         answer = request.form["answer"]
-#         print(answer)
-#     except:
-#         return "An answer to the transaction is expected"
-#
-#     parsed_answer = answer.split(";", 1)
-#     db.complete_transaction(parsed_answer[0], parsed_answer[1])
-#     return redirect("/h")
+@login_required
+@app.route("/api/create_transaction", methods=["POST"])
+def api_create_transaction():
+    try:
+        user1_change = request.form["change_in_balance"]
+        user2_id = request.form["user2_id"]
+    except:
+        return "An answer to the transaction is expected"
+
+    user2_change = str(-int(user1_change))
+    t = Transaction(db.get_transactions_count(), "open", current_user.get_id(), user2_id, user1_change, user2_change)
+    db.create_transaction(t)
+    return redirect("/h")
 
 
 @login_required
