@@ -8,8 +8,20 @@
     <link rel="stylesheet" href="/static/css/home.css">
 </head>
 
-<body onload="">
+<body onload="hideFlashedMessages()">
     <h2>{{ user.get_balance() }} EUR</h2>
+
+    <div id="flashedMessagesDiv">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <p>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </p>
+            {% endif %}
+        {% endwith %}
+    </div>
 
     <button class="open-button" onclick="openForm()">Create Transaction</button>
 

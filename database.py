@@ -98,7 +98,7 @@ class Database:
 
     @staticmethod
     def get_transactions_of_current_user(current_user):
-        rows = db.execute("SELECT * FROM Transactions WHERE user1_id = {} OR user2_id = {} ORDER BY id;"
+        rows = db.execute("SELECT * FROM Transactions WHERE user1_id = {} OR user2_id = {} ORDER BY id DESC;"
                           .format(current_user.get_id(), current_user.get_id()))
 
         transactions = []
@@ -108,7 +108,6 @@ class Database:
 
     @staticmethod
     def create_transaction(t):
-        print(t.get_user1_id, t.get_user2_id(), t.get_user1_change(), t.get_user2_change())
         db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES({}, {}, {}, {})"
                    .format(t.get_user1_id(), t.get_user2_id(), t.get_user1_change(), t.get_user2_change()))
         return True

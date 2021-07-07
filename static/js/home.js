@@ -137,3 +137,9 @@ function openForm() {
 function closeForm() {
     document.getElementById("myForm").style.display = "none";
 }
+
+function hideFlashedMessages() {
+    setTimeout(function() {
+        $("#flashedMessagesDiv").remove();
+    }, 3000);
+}
