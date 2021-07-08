@@ -135,16 +135,16 @@ def register_post():
         flash("Username and password should be filled")
         return redirect("/register")
 
-    name = request.form["username"]
+    email = request.form["username"]
     password = generate_password_hash(request.form["password"])
-    user = User(db.get_users_count(), name, password, "user", 0)
+    user = User(db.get_users_count(), email, password, "user", 0)
 
-    if db.get_user_by_email(name) is not None:
+    if db.get_user_by_email(email) is not None:
         flash("User already exists")
         return redirect("/register")
 
-    db.add_user(user)
     login_user(user)
+    db.add_user(user)
     return redirect("/h")
 
 
@@ -169,6 +169,25 @@ def api_admin_get_users():
         mimetype="application/json"
     )
     return response
+
+
+@login_required
+@app.route("/api/a/delete_user", methods=["POST"])
+@roles_required(("admin",))
+def api_admin_delete_user():
+    # try:
+    user_id = request.form["user_id"]
+    print(user_id)
+
+    if db.get_user_by_id(user_id) is None:
+        return "user does not exist"
+    print("after if")
+
+    db.delete_user_by_id(user_id)
+    print("after delete")
+    # except:
+    #     return "error in post request"
+    return redirect("/a/u")
 
 
 @login_required
@@ -232,20 +251,20 @@ def api_complete_transaction(answer=None):
     return redirect("/h")
 
 
-# TODO remove/move asserts
-@login_required
-@app.route("/api/qr/<string:key>", methods=["GET"])
-def api_qr_complete_transaction(key):
-    # parse the input data; first element is the answer (accept or reject), the second
-    # is the transaction id
-    parsed_answer = key.split(";", 1)
-    try:
-        assert parsed_answer[0] == "accept" or parsed_answer[0] == "reject"
-        assert isinstance(db.get_transaction(parsed_answer[1]), Transaction)
-        api_complete_transaction(key)
-    except:
-        return "error"
-    return redirect("/h")
+# # TODO remove/move asserts
+# @login_required
+# @app.route("/api/qr/<string:key>", methods=["GET"])
+# def api_qr_complete_transaction(key):
+#     # parse the input data; first element is the answer (accept or reject), the second
+#     # is the transaction id
+#     parsed_answer = key.split(";", 1)
+#     try:
+#         assert parsed_answer[0] == "accept" or parsed_answer[0] == "reject"
+#         assert isinstance(db.get_transaction(parsed_answer[1]), Transaction)
+#         api_complete_transaction(key)
+#     except:
+#         return "error"
+#     return redirect("/h")
 
 
 # @login_required

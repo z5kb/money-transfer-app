@@ -35,13 +35,20 @@ function renderUsers() {
             '<td>' + users[i][0] + '</td>' +
             '<td>' + users[i][1] + '</td>' +
             '<td>' + users[i][2] + '</td>' +
-            '<td style="width: 5%">' + '<button type="button" onclick="">Update</button>' + '</td>' +
-            '<td style="width: 5%">' + '<button type="button" onclick="">Freeze</button>' + '</td>' +
-            '<td style="width: 5%">' + '<button type="button" onclick="">Delete</button>' + '</td>' +
+            '<td style="width: 5%"><button type="button" onclick="">Update</button></td>' +
+            '<td style="width: 5%"><button type="button" onclick="">Freeze</button></td>' +
+            '<td style="width: 5%"><button type="submit" onclick="deleteUser(' + users[i][0] + ')">Delete</button></td>' +
             + '</tr>'
         );
     }
     usersGotLoaded = 1;
+}
+
+// delete user
+function deleteUser(userId) {
+    // set form action to delete
+    $("#usersTableForm").attr("action", "/api/a/delete_user")
+        .append('<input type="hidden" name="user_id" value="' + userId + '">')
 }
 
 // dynamically search through users
@@ -92,13 +99,13 @@ function sortTable(n) {
 
             /*check if the two rows should switch place,
             based on the direction, asc or desc:*/
-            if (dir == "asc") {
+            if (dir === "asc") {
                 if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
                     //if so, mark as a switch and break the loop:
                     shouldSwitch= true;
                     break;
                 }
-            } else if (dir == "desc") {
+            } else if (dir === "desc") {
                 if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
                     //if so, mark as a switch and break the loop:
                     shouldSwitch = true;
@@ -117,7 +124,7 @@ function sortTable(n) {
         } else {
             /*If no switching has been done AND the direction is "asc",
             set the direction to "desc" and run the while loop again.*/
-            if (switchcount == 0 && dir == "asc") {
+            if (switchcount === 0 && dir === "asc") {
                 dir = "desc";
                 switching = true;
             }

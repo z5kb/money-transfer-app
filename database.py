@@ -56,6 +56,7 @@ class Database:
         statement = "INSERT INTO Users(email, password, balance, role) VALUES('{}', '{}', {}, '{}');"\
             .format(user.get_email(), user.get_password(), user.get_balance(), user.get_role())
         db.execute(statement)
+        return True
 
     @staticmethod
     def get_user_by_email(email):
@@ -156,6 +157,21 @@ class Database:
     def update_user(new_user):
         db.execute("UPDATE Users SET email = '{}', password = '{}' WHERE id = {};"
                    .format(new_user.get_email(), new_user.get_password(), new_user.get_id()))
+        return True
+
+    @staticmethod
+    def delete_user_by_id(user_id):
+        # delete user's transactions
+        Database.delete_user_transactions_by_user_id(user_id)
+
+        db.execute("DELETE FROM Users WHERE id = {};".format(user_id))
+        return True
+
+    @staticmethod
+    def delete_user_transactions_by_user_id(user_id):
+        db.execute("DELETE FROM Transactions WHERE user1_id = {} OR user2_id = {};"
+                   .format(user_id, user_id))
+        return True
 
     @staticmethod
     def get_users_count():
