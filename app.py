@@ -46,6 +46,42 @@ def home_get():
     return render_template("home.html", user=current_user, transactions=transactions)
 
 
+@app.route("/h/settings", methods=["GET"])
+@login_required
+@roles_required(("user",))
+def settings_get():
+    return render_template("settings.html", user=current_user)
+
+
+@app.route("/h/settings", methods=["POST"])
+@login_required
+@roles_required(("user",))
+def settings_post():
+    user = None
+    new_email = None
+    new_pass = None
+
+    try:
+        action = request.form["action"]
+
+        if action == "update profile":
+            # get data from form
+            new_email = request.form["new_email"]
+            new_pass = request.form["new_pass"]
+
+            # update user
+            user = current_user
+            user.set_email(new_email)
+            user.set_password(generate_password_hash(new_pass))
+
+            # commit changes to db
+            db.update_user(user)
+    except:
+        flash("error processing your request")
+        return redirect("/h")
+    return redirect("/h/settings")
+
+
 @app.route("/a", methods=["GET"])
 @login_required
 @roles_required(("admin",))
@@ -66,7 +102,7 @@ def login_post():
     if not name or not password:
         return "Username and password can't be empty"
 
-    user = db.get_user_by_name(name)
+    user = db.get_user_by_email(name)
     if user is None:
         flash("User does not exist")
         return redirect("/login")
@@ -94,7 +130,7 @@ def register_post():
     password = generate_password_hash(request.form["password"])
     user = User(db.get_users_count(), name, password, "user", 0)
 
-    if db.get_user_by_name(name) is not None:
+    if db.get_user_by_email(name) is not None:
         flash("User already exists")
         return redirect("/register")
 

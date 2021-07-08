@@ -9,6 +9,15 @@
 </head>
 
 <body onload="hideFlashedMessages()">
+    <div class="settingsDropdown">
+        <button class="settingsDropdownButton" onclick="toggleSettingsDropdownContentsVisibility()">Profile</button>
+        <div id="settingsDropdownContents" class="settingsDropdownContents">
+            <a href="">Add money</a>
+            <a href="/h/settings" target="_blank">Settings</a>
+            <a href="/logout">Log out</a>
+        </div>
+    </div>
+
     <h2>{{ user.get_balance() }} EUR</h2>
 
     <div id="flashedMessagesDiv">
@@ -53,18 +62,6 @@
             <button type="button" class="btn cancel" onclick="closeForm()">Cancel</button>
         </form>
     </div>
-
-{##}
-{#    <div class="settingsDropdown">#}
-{#        <button class="settingsDropdownButton" onclick="toggleSettingsDropdownContentsVisibility()">Profile</button>#}
-{#        <div id="settingsDropdownContents" class="settingsDropdownContents">#}
-{#            <a href="/settings">Settings</a>#}
-{#            <a href="/logout">Log out</a>#}
-{#    </div>#}
-{##}
-{#    <a href="/logout">Logout</a>#}
-{##}
-
 
     <table>
         {% for t in transactions %}

@@ -42,3 +42,9 @@ class User:
 
     def has_to_reload_page(self):
         return self.__has_to_reload_page
+
+    def set_email(self, new_email):
+        self.__email = new_email
+
+    def set_password(self, new_password):
+        self.__password = new_password

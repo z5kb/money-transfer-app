@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Settings</title>
+    <script src="/static/js/settings.js"></script>
+    <script src="/static/js/jquery.js"></script>
+    <link rel="stylesheet" href="/static/css/settings.css">
+</head>
+<body>
+    <div class="sidenav">
+        <a onclick="renderProfile({{ user.get_id() }})">Profile</a>
+    </div>
+
+    <div id="main" class="main">
+        <h2>Sidenav Example</h2>
+        <p>This sidenav is always shown.</p>
+    </div>
+</body>
+</html>
