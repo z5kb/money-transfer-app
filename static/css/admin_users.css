@@ -1,0 +1,36 @@
+* {
+    box-sizing: border-box;
+}
+
+.scrollable {
+    overflow:scroll;
+    height:200px;
+}
+
+#searchUsersInput {
+    width: 100%;
+    font-size: 16px;
+    padding: 12px 20px 12px 12px;
+    border: 1px solid #ddd;
+    margin-bottom: 12px;
+}
+
+#usersTable {
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid #ddd;
+    font-size: 18px;
+}
+
+#usersTable th, #usersTable td {
+    text-align: left;
+    padding: 12px;
+}
+
+#usersTable tr {
+    border-bottom: 1px solid #ddd;
+}
+
+#usersTable tr.header, #usersTable tr:hover {
+    background-color: #f1f1f1;
+}

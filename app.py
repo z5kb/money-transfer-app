@@ -86,7 +86,14 @@ def settings_post():
 @login_required
 @roles_required(("admin",))
 def admin_get():
-    return "page has no template"
+    return render_template("admin.html", user=current_user)
+
+
+@app.route("/a/u", methods=["GET"])
+@login_required
+@roles_required(("admin",))
+def admin_users_get():
+    return render_template("admin_users.html")
 
 
 @app.route("/login", methods=["GET"])
@@ -112,7 +119,9 @@ def login_post():
         return redirect("/login")
 
     login_user(user)
-    return redirect("/h")
+    if user.get_role() == "user":
+        return redirect("/h")
+    return redirect("/a")
 
 
 @app.route("/register", methods=["GET"])
@@ -143,7 +152,19 @@ def register_post():
 @app.route("/api/users", methods=["GET"])
 def api_get_users():
     response = app.response_class(
-        response=json.dumps(db.get_users(current_user), indent=4),
+        response=json.dumps(db.get_users_of_current_user(current_user), indent=4),
+        status=200,
+        mimetype="application/json"
+    )
+    return response
+
+
+@login_required
+@app.route("/api/a/users", methods=["GET"])
+@roles_required(("admin",))
+def api_admin_get_users():
+    response = app.response_class(
+        response=json.dumps(db.get_users(), indent=4),
         status=200,
         mimetype="application/json"
     )

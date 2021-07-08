@@ -24,14 +24,16 @@ class Database:
                    "has_to_reload_page bool default false"
                    ");")
 
-        user1 = User(1, '1st', generate_password_hash('1'), "user", 0)
+        user1 = User(1, 'first@fake.org', generate_password_hash('1'), "user", 0)
         self.add_user(user1)
-        user2 = User(2, '2nd', generate_password_hash('2'), "user", 5)
+        user2 = User(2, 'second@fake.org', generate_password_hash('2'), "user", 5)
         self.add_user(user2)
-        user3 = User(3, '3rd', generate_password_hash('3'), "user", 8)
+        user3 = User(3, 'third@fake.org', generate_password_hash('3'), "user", 8)
         self.add_user(user3)
-        user4 = User(4, '4th', generate_password_hash('4'), "user", 9)
+        user4 = User(4, 'fourth@fake.org', generate_password_hash('4'), "user", 9)
         self.add_user(user4)
+        admin1 = User(5, 'a', generate_password_hash('a'), "admin", 0)
+        self.add_user(admin1)
 
         # user1 is the initiator of the transfer, user2 is the receiver
         db.execute("DROP TYPE IF EXISTS transaction_status_enum;")
@@ -51,8 +53,8 @@ class Database:
 
     @staticmethod
     def add_user(user):
-        statement = "INSERT INTO Users(email, password, balance) VALUES('{}', '{}', {});"\
-            .format(user.get_email(), user.get_password(), user.get_balance())
+        statement = "INSERT INTO Users(email, password, balance, role) VALUES('{}', '{}', {}, '{}');"\
+            .format(user.get_email(), user.get_password(), user.get_balance(), user.get_role())
         db.execute(statement)
 
     @staticmethod
@@ -73,7 +75,18 @@ class Database:
 
     # TODO change this (returning lists of users' data, not users)
     @staticmethod
-    def get_users(current_user):
+    def get_users():
+        rows = db.execute("SELECT * FROM Users;")
+
+        users = []
+        for r in rows:
+            if r[3] == "user":
+                users.append([r[0], r[1], r[4]])
+        return users
+
+    # TODO change this (returning lists of users' data, not users)
+    @staticmethod
+    def get_users_of_current_user(current_user):
         rows = db.execute("SELECT * FROM Users;")
 
         users = []
