@@ -17,7 +17,7 @@ class Database:
         db.execute("CREATE TYPE role_enum AS ENUM ('user', 'admin', 'frozen');")
         db.execute("CREATE TABLE IF NOT EXISTS Users ("
                    "id serial not null primary key,"
-                   "name varchar(20) unique,"
+                   "email varchar(20) unique,"
                    "password varchar(128),"
                    "role role_enum default 'user',"
                    "balance float CHECK(balance >= 0) default 10,"
@@ -51,13 +51,13 @@ class Database:
 
     @staticmethod
     def add_user(user):
-        statement = "INSERT INTO Users(name, password, balance) VALUES('{}', '{}', {});"\
+        statement = "INSERT INTO Users(email, password, balance) VALUES('{}', '{}', {});"\
             .format(user.get_email(), user.get_password(), user.get_balance())
         db.execute(statement)
 
     @staticmethod
-    def get_user_by_name(name):
-        rows = db.execute("SELECT * FROM Users WHERE name = '{}';".format(name))
+    def get_user_by_email(email):
+        rows = db.execute("SELECT * FROM Users WHERE email = '{}';".format(email))
 
         for r in rows:
             return User(r[0], r[1], r[2], r[3], r[4])
@@ -98,7 +98,7 @@ class Database:
 
     @staticmethod
     def get_transactions_of_current_user(current_user):
-        rows = db.execute("SELECT * FROM Transactions WHERE user1_id = {} OR user2_id = {} ORDER BY id;"
+        rows = db.execute("SELECT * FROM Transactions WHERE user1_id = {} OR user2_id = {} ORDER BY id DESC;"
                           .format(current_user.get_id(), current_user.get_id()))
 
         transactions = []
@@ -108,7 +108,6 @@ class Database:
 
     @staticmethod
     def create_transaction(t):
-        print(t.get_user1_id, t.get_user2_id(), t.get_user1_change(), t.get_user2_change())
         db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES({}, {}, {}, {})"
                    .format(t.get_user1_id(), t.get_user2_id(), t.get_user1_change(), t.get_user2_change()))
         return True
@@ -139,6 +138,11 @@ class Database:
         # close transaction
         db.execute("UPDATE Transactions SET status = 'closed' WHERE id = {};".format(transaction_id))
         return True
+
+    @staticmethod
+    def update_user(new_user):
+        db.execute("UPDATE Users SET email = '{}', password = '{}' WHERE id = {};"
+                   .format(new_user.get_email(), new_user.get_password(), new_user.get_id()))
 
     @staticmethod
     def get_users_count():

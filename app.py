@@ -6,12 +6,14 @@ from flask_login import LoginManager, current_user, login_user, login_required, 
 from itsdangerous import json
 from werkzeug.security import generate_password_hash
 from roles_required import roles_required
+from flask_qrcode import QRcode
 
 app = Flask(__name__)
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.secret_key = "todo-this-really-needs-to-be-changed"
 psql = SQLAlchemy(app)
+QRcode(app)
 
 from user import User
 from transaction import Transaction
@@ -44,6 +46,42 @@ def home_get():
     return render_template("home.html", user=current_user, transactions=transactions)
 
 
+@app.route("/h/settings", methods=["GET"])
+@login_required
+@roles_required(("user",))
+def settings_get():
+    return render_template("settings.html", user=current_user)
+
+
+@app.route("/h/settings", methods=["POST"])
+@login_required
+@roles_required(("user",))
+def settings_post():
+    user = None
+    new_email = None
+    new_pass = None
+
+    try:
+        action = request.form["action"]
+
+        if action == "update profile":
+            # get data from form
+            new_email = request.form["new_email"]
+            new_pass = request.form["new_pass"]
+
+            # update user
+            user = current_user
+            user.set_email(new_email)
+            user.set_password(generate_password_hash(new_pass))
+
+            # commit changes to db
+            db.update_user(user)
+    except:
+        flash("error processing your request")
+        return redirect("/h")
+    return redirect("/h/settings")
+
+
 @app.route("/a", methods=["GET"])
 @login_required
 @roles_required(("admin",))
@@ -64,7 +102,7 @@ def login_post():
     if not name or not password:
         return "Username and password can't be empty"
 
-    user = db.get_user_by_name(name)
+    user = db.get_user_by_email(name)
     if user is None:
         flash("User does not exist")
         return redirect("/login")
@@ -92,7 +130,7 @@ def register_post():
     password = generate_password_hash(request.form["password"])
     user = User(db.get_users_count(), name, password, "user", 0)
 
-    if db.get_user_by_name(name) is not None:
+    if db.get_user_by_email(name) is not None:
         flash("User already exists")
         return redirect("/register")
 
@@ -132,17 +170,24 @@ def api_create_transaction():
     except:
         return "An answer to the transaction is expected"
 
-    user2_change = str(-int(user1_change))
+    user2_change = str(-float(user1_change))
     t = Transaction(db.get_transactions_count(), "open", current_user.get_id(), user2_id, user1_change, user2_change)
+
+    if db.get_user_by_id(current_user.get_id()).get_balance() + float(user1_change) < 0:
+        flash("You don't have enough money to create this transaction.")
+        return redirect("/h")
+
     db.create_transaction(t)
     return redirect("/h")
 
 
+# TODO add asserts
 @login_required
 @app.route("/api/complete_transaction", methods=["POST"])
-def api_complete_transaction():
+def api_complete_transaction(answer=None):
     try:
-        answer = request.form["answer"]
+        if answer is None:
+            answer = request.form["answer"]
     except:
         return redirect("/h")
 
@@ -152,10 +197,33 @@ def api_complete_transaction():
 
     # check if the initiator is trying to accept his own transfer
     if current_user.get_id() == db.get_transaction(parsed_answer[1]).get_user1_id() and parsed_answer == "accept":
+        flash("You can't accept your own transfer.")
         return redirect("/h")
 
     # compete transaction
-    db.complete_transaction(parsed_answer[0], parsed_answer[1])
+    if db.complete_transaction(parsed_answer[0], parsed_answer[1]):
+        if parsed_answer[0] == "accept":
+            flash("Transaction completed.")
+        elif parsed_answer[0] == "reject":
+            flash("Transaction rejected.")
+    else:
+        flash("Transaction failed. Do you have enough money?")
+    return redirect("/h")
+
+
+# TODO remove/move asserts
+@login_required
+@app.route("/api/qr/<string:key>", methods=["GET"])
+def api_qr_complete_transaction(key):
+    # parse the input data; first element is the answer (accept or reject), the second
+    # is the transaction id
+    parsed_answer = key.split(";", 1)
+    try:
+        assert parsed_answer[0] == "accept" or parsed_answer[0] == "reject"
+        assert isinstance(db.get_transaction(parsed_answer[1]), Transaction)
+        api_complete_transaction(key)
+    except:
+        return "error"
     return redirect("/h")
 
 

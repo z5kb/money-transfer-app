@@ -8,8 +8,29 @@
     <link rel="stylesheet" href="/static/css/home.css">
 </head>
 
-<body onload="">
+<body onload="hideFlashedMessages()">
+    <div class="settingsDropdown">
+        <button class="settingsDropdownButton" onclick="toggleSettingsDropdownContentsVisibility()">Profile</button>
+        <div id="settingsDropdownContents" class="settingsDropdownContents">
+            <a href="">Add money</a>
+            <a href="/h/settings" target="_blank">Settings</a>
+            <a href="/logout">Log out</a>
+        </div>
+    </div>
+
     <h2>{{ user.get_balance() }} EUR</h2>
+
+    <div id="flashedMessagesDiv">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <p>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </p>
+            {% endif %}
+        {% endwith %}
+    </div>
 
     <button class="open-button" onclick="openForm()">Create Transaction</button>
 
@@ -41,18 +62,6 @@
             <button type="button" class="btn cancel" onclick="closeForm()">Cancel</button>
         </form>
     </div>
-
-{##}
-{#    <div class="settingsDropdown">#}
-{#        <button class="settingsDropdownButton" onclick="toggleSettingsDropdownContentsVisibility()">Profile</button>#}
-{#        <div id="settingsDropdownContents" class="settingsDropdownContents">#}
-{#            <a href="/settings">Settings</a>#}
-{#            <a href="/logout">Log out</a>#}
-{#    </div>#}
-{##}
-{#    <a href="/logout">Logout</a>#}
-{##}
-
 
     <table>
         {% for t in transactions %}
