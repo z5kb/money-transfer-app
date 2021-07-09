@@ -18,8 +18,36 @@
                     <th onclick="sortTable(0)">Id</th>
                     <th onclick="sortTable(1)">Email</th>
                     <th onclick="sortTable(2)">Balance</th>
+                    <th onclick="sortTable(3)">Role</th>
                 </tr>
             </table>
+        </form>
+    </div>
+
+    <div class="form-popup" id="updateUserForm">
+        <form id="updateUserForm" action="/api/a/update_user" class="form-container" method="post">
+            <h1 id="updateUserFormHeader">placeholder</h1>
+
+            <label><b>Email</b>
+                <input id="newEmailInput" type="text" name="new_email" value="placeholder" required>
+            </label>
+
+            <label><b>Password</b>
+                <input id="newPassInput" type="text" name="new_pass" placeholder="Enter new password...">
+            </label>
+
+            <label><b>Balance</b>
+                <input id="newBalanceInput" type="text" name="new_balance" value="placeholder" required>
+            </label>
+
+            <label><b>Role</b>
+                <input id="newRoleInput" type="text" name="new_role" value="placeholder" required>
+            </label>
+
+            <input type="hidden" id="userId" name="user_id" value="placeholder">
+
+            <button type="submit">Done</button>
+            <button type="button" onclick="closeUpdateUserForm()">Cancel</button>
         </form>
     </div>
 </body>

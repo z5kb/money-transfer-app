@@ -1,5 +1,4 @@
 let users;
-let usersGotLoaded = 0;
 
 function loadUsers() {
     $.when(
@@ -34,14 +33,14 @@ function renderUsers() {
         $('#usersTable tr:last').after('<tr>' +
             '<td>' + users[i][0] + '</td>' +
             '<td>' + users[i][1] + '</td>' +
+            '<td>' + users[i][3] + '</td>' +
             '<td>' + users[i][2] + '</td>' +
-            '<td style="width: 5%"><button type="button" onclick="">Update</button></td>' +
-            '<td style="width: 5%"><button type="button" onclick="">Freeze</button></td>' +
+            '<td style="width: 5%"><button type="button" onclick="updateUser(' + i + ')">Update</button></td>' +
+            '<td style="width: 5%"><button type="submit" onclick="freezeUser(' + users[i][0] + ')">Freeze</button></td>' +
             '<td style="width: 5%"><button type="submit" onclick="deleteUser(' + users[i][0] + ')">Delete</button></td>' +
             + '</tr>'
         );
     }
-    usersGotLoaded = 1;
 }
 
 // delete user
@@ -49,6 +48,27 @@ function deleteUser(userId) {
     // set form action to delete
     $("#usersTableForm").attr("action", "/api/a/delete_user")
         .append('<input type="hidden" name="user_id" value="' + userId + '">')
+}
+
+// freeze user
+function freezeUser(userId) {
+    // set form action to delete
+    $("#usersTableForm").attr("action", "/api/a/freeze_user")
+        .append('<input type="hidden" name="user_id" value="' + userId + '">')
+}
+
+// update user
+function updateUser(i) {
+    $("#updateUserFormHeader").text("Update " + users[i][1]);
+    $("#newEmailInput").val(users[i][1]);
+    $("#newRoleInput").val(users[i][2]);
+    $("#newBalanceInput").val(users[i][3]);
+    $("#userId").val(users[i][0]);
+    $("#updateUserForm").show();
+}
+
+function closeUpdateUserForm() {
+    $("#updateUserForm").hide();
 }
 
 // dynamically search through users

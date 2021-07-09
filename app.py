@@ -148,8 +148,8 @@ def register_post():
     return redirect("/h")
 
 
-@login_required
 @app.route("/api/users", methods=["GET"])
+@login_required
 def api_get_users():
     response = app.response_class(
         response=json.dumps(db.get_users_of_current_user(current_user), indent=4),
@@ -159,8 +159,8 @@ def api_get_users():
     return response
 
 
-@login_required
 @app.route("/api/a/users", methods=["GET"])
+@login_required
 @roles_required(("admin",))
 def api_admin_get_users():
     response = app.response_class(
@@ -171,27 +171,78 @@ def api_admin_get_users():
     return response
 
 
-@login_required
 @app.route("/api/a/delete_user", methods=["POST"])
+@login_required
 @roles_required(("admin",))
 def api_admin_delete_user():
+    try:
+        user_id = request.form["user_id"]
+
+        if db.get_user_by_id(user_id) is None:
+            return "user does not exist"
+
+        db.delete_user_by_id(user_id)
+    except:
+        return "error in post request"
+    return redirect("/a/u")
+
+
+@app.route("/api/a/update_user", methods=["POST"])
+@login_required
+@roles_required(("admin",))
+def api_admin_update_user():
+    try:
+        user_id = request.form["user_id"]
+        new_email = request.form["new_email"]
+        new_pass = request.form["new_pass"]
+        new_balance = request.form["new_balance"]
+        new_role = request.form["new_role"]
+
+        # make sure input is provided
+        assert user_id is not None
+        assert new_email is not None
+        assert new_balance is not None
+        assert new_role is not None
+
+        # update user
+        new_user = db.get_user_by_id(user_id)
+        new_user.set_email(new_email)
+        new_user.set_balance(new_balance)
+        new_user.set_role(new_role)
+
+        if new_pass:
+            new_user.set_password(generate_password_hash(new_pass))
+
+        # commit changes to db
+        db.update_user(new_user)
+    except:
+        return "error in post request"
+    return redirect("/a/u")
+
+
+@app.route("/api/a/freeze_user", methods=["POST"])
+@login_required
+@roles_required(("admin",))
+def api_admin_freeze_user():
     # try:
     user_id = request.form["user_id"]
-    print(user_id)
+    assert user_id is not None
 
-    if db.get_user_by_id(user_id) is None:
-        return "user does not exist"
-    print("after if")
+    user = db.get_user_by_id(user_id)
+    assert user is not None
 
-    db.delete_user_by_id(user_id)
-    print("after delete")
+    # update user's role
+    user.set_role("frozen")
+
+    # commit changes to db
+    db.update_user(user)
     # except:
     #     return "error in post request"
     return redirect("/a/u")
 
 
-@login_required
 @app.route("/api/transactions", methods=["GET"])
+@login_required
 def api_get_transactions():
     response = app.response_class(
         response=json.dumps(db.get_transactions_of_current_user(current_user), indent=4),
@@ -201,8 +252,8 @@ def api_get_transactions():
     return response
 
 
-@login_required
 @app.route("/api/create_transaction", methods=["POST"])
+@login_required
 def api_create_transaction():
     try:
         user1_change = request.form["change_in_balance"]
@@ -222,8 +273,8 @@ def api_create_transaction():
 
 
 # TODO add asserts
-@login_required
 @app.route("/api/complete_transaction", methods=["POST"])
+@login_required
 def api_complete_transaction(answer=None):
     try:
         if answer is None:
@@ -252,8 +303,8 @@ def api_complete_transaction(answer=None):
 
 
 # # TODO remove/move asserts
-# @login_required
 # @app.route("/api/qr/<string:key>", methods=["GET"])
+# @login_required
 # def api_qr_complete_transaction(key):
 #     # parse the input data; first element is the answer (accept or reject), the second
 #     # is the transaction id
@@ -267,8 +318,8 @@ def api_complete_transaction(answer=None):
 #     return redirect("/h")
 
 
-# @login_required
 # @app.route("/api/ping", methods=["GET"])
+# @login_required
 # def ping():
 #     user = db.get_user_by_id(current_user.get_id())
 #     answer = []
@@ -286,14 +337,14 @@ def api_complete_transaction(answer=None):
 #     return response
 
 
-@login_required
 @app.route("/unauthorized", methods=["GET"])
+@login_required
 def unauthorized():
     return render_template("unauthorized.html")
 
 
-@login_required
 @app.route("/logout", methods=["GET"])
+@login_required
 def logout():
     logout_user()
     return redirect("/")

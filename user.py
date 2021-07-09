@@ -48,3 +48,6 @@ class User:
 
     def set_password(self, new_password):
         self.__password = new_password
+
+    def set_role(self, new_role):
+        self.__role = new_role

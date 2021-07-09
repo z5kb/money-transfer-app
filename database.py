@@ -13,13 +13,13 @@ class Database:
     def __init__(self):
         db.execute("DROP TABLE IF EXISTS Transactions;")
         db.execute("DROP TABLE IF EXISTS Users;")
-        db.execute("DROP TYPE IF EXISTS role_enum;")
-        db.execute("CREATE TYPE role_enum AS ENUM ('user', 'admin', 'frozen');")
+        db.execute("DROP TYPE IF EXISTS user_role_enum;")
+        db.execute("CREATE TYPE user_role_enum AS ENUM ('user', 'admin', 'frozen');")
         db.execute("CREATE TABLE IF NOT EXISTS Users ("
                    "id serial not null primary key,"
                    "email varchar(20) unique,"
                    "password varchar(128),"
-                   "role role_enum default 'user',"
+                   "role user_role_enum default 'user',"
                    "balance float CHECK(balance >= 0) default 10,"
                    "has_to_reload_page bool default false"
                    ");")
@@ -53,9 +53,8 @@ class Database:
 
     @staticmethod
     def add_user(user):
-        statement = "INSERT INTO Users(email, password, balance, role) VALUES('{}', '{}', {}, '{}');"\
-            .format(user.get_email(), user.get_password(), user.get_balance(), user.get_role())
-        db.execute(statement)
+        db.execute("INSERT INTO Users(email, password, balance, role) VALUES('{}', '{}', {}, '{}');"
+                   .format(user.get_email(), user.get_password(), user.get_balance(), user.get_role()))
         return True
 
     @staticmethod
@@ -77,12 +76,12 @@ class Database:
     # TODO change this (returning lists of users' data, not users)
     @staticmethod
     def get_users():
-        rows = db.execute("SELECT * FROM Users;")
+        rows = db.execute("SELECT * FROM Users ORDER BY id;")
 
         users = []
         for r in rows:
-            if r[3] == "user":
-                users.append([r[0], r[1], r[4]])
+            if r[3] == "user" or r[3] == "frozen":
+                users.append([r[0], r[1], r[3], r[4]])
         return users
 
     # TODO change this (returning lists of users' data, not users)
@@ -154,17 +153,18 @@ class Database:
         return True
 
     @staticmethod
-    def update_user(new_user):
-        db.execute("UPDATE Users SET email = '{}', password = '{}' WHERE id = {};"
-                   .format(new_user.get_email(), new_user.get_password(), new_user.get_id()))
-        return True
-
-    @staticmethod
     def delete_user_by_id(user_id):
         # delete user's transactions
         Database.delete_user_transactions_by_user_id(user_id)
 
         db.execute("DELETE FROM Users WHERE id = {};".format(user_id))
+        return True
+
+    @staticmethod
+    def update_user(new_user):
+        db.execute("UPDATE Users SET email = '{}', password = '{}', role = '{}', balance = {} WHERE id = {};"
+                   .format(new_user.get_email(), new_user.get_password(), new_user.get_role(),
+                           new_user.get_balance(), new_user.get_id()))
         return True
 
     @staticmethod
