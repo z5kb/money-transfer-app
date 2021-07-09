@@ -1,0 +1,36 @@
+* {
+    box-sizing: border-box;
+}
+
+.scrollable {
+    overflow:scroll;
+    height:200px;
+}
+
+#searchTransactionsInput {
+    width: 100%;
+    font-size: 16px;
+    padding: 12px 20px 12px 12px;
+    border: 1px solid #ddd;
+    margin-bottom: 12px;
+}
+
+#transactionsTable {
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid #ddd;
+    font-size: 18px;
+}
+
+#transactionsTable th, #transactionsTable td {
+    text-align: left;
+    padding: 12px;
+}
+
+#transactionsTable tr {
+    border-bottom: 1px solid #ddd;
+}
+
+#transactionsTable tr.header, #transactionsTable tr:hover {
+    background-color: #f1f1f1;
+}

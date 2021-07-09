@@ -37,7 +37,8 @@ class Database:
 
         # user1 is the initiator of the transfer, user2 is the receiver
         db.execute("DROP TYPE IF EXISTS transaction_status_enum;")
-        db.execute("CREATE TYPE transaction_status_enum AS ENUM ('open', 'closed', 'frozen', 'failed');")
+        # TODO check if we need the "failed" option
+        db.execute("CREATE TYPE transaction_status_enum AS ENUM ('open', 'closed', 'frozen');")
         db.execute("CREATE TABLE IF NOT EXISTS Transactions ("
                    "id serial not null primary key,"
                    "status transaction_status_enum default 'open',"
@@ -102,12 +103,21 @@ class Database:
         return True
 
     @staticmethod
-    def get_transaction(transaction_id):
+    def get_transaction_by_id(transaction_id):
         rows = db.execute("SELECT * FROM Transactions WHERE id = {};".format(transaction_id))
 
         for r in rows:
             return Transaction(r[0], r[1], r[2], r[3], r[4], r[5])
         return None
+
+    @staticmethod
+    def get_transactions():
+        rows = db.execute("SELECT * FROM Transactions ORDER BY id;")
+
+        transactions = []
+        for r in rows:
+            transactions.append([r[0], r[1], r[2], r[3], r[4], r[5]])
+        return transactions
 
     @staticmethod
     def get_transactions_of_current_user(current_user):
@@ -132,7 +142,7 @@ class Database:
             return False
         elif action == "accept":
             # get the data needed for the transfer
-            transaction = Database.get_transaction(transaction_id)
+            transaction = Database.get_transaction_by_id(transaction_id)
             user1 = Database.get_user_by_id(transaction.get_user1_id())
             user2 = Database.get_user_by_id(transaction.get_user2_id())
 
@@ -150,6 +160,12 @@ class Database:
 
         # close transaction
         db.execute("UPDATE Transactions SET status = 'closed' WHERE id = {};".format(transaction_id))
+        return True
+
+    @staticmethod
+    def freeze_transaction(transaction):
+        db.execute("UPDATE Transactions SET status = '{}' WHERE id = {};"
+                   .format(transaction.get_status(), transaction.get_id()))
         return True
 
     @staticmethod
@@ -171,6 +187,18 @@ class Database:
     def delete_user_transactions_by_user_id(user_id):
         db.execute("DELETE FROM Transactions WHERE user1_id = {} OR user2_id = {};"
                    .format(user_id, user_id))
+        return True
+
+    @staticmethod
+    def freeze_user_open_transactions(user):
+        db.execute("UPDATE Transactions SET status = '{}' WHERE (user1_id = {} OR user2_id = {}) AND status = '{}';"
+                   .format("frozen", user.get_id(), user.get_id(), "open"))
+        return True
+
+    @staticmethod
+    def unfreeze_user_transactions(user):
+        db.execute("UPDATE Transactions SET status = '{}' WHERE (user1_id = {} OR user2_id = {}) AND status = '{}';"
+                   .format("open", user.get_id(), user.get_id(), "frozen"))
         return True
 
     @staticmethod

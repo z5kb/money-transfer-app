@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transactions</title>
+    <script src="/static/js/jquery.js"></script>
+    <script src="/static/js/admin_transactions.js"></script>
+    <link rel="stylesheet" href="/static/css/admin_transactions.css">
+</head>
+<body onload="loadTransactions()">
+    <input type="text" id="searchTransactionsInput" onkeyup="dynamicSearch()" placeholder="Search transactions by id..."
+           title="Type in a name">
+
+    <div class="scrollable">
+        <form id="transactionsTableForm" method="post">
+            <table id="transactionsTable">
+                <tr class="header">
+                    <th onclick="sortTable(0)">id</th>
+                    <th onclick="sortTable(1)">status</th>
+                    <th onclick="sortTable(2)">user1_id</th>
+                    <th onclick="sortTable(3)">user2_id</th>
+                    <th onclick="sortTable(4)">user1_change</th>
+                    <th onclick="sortTable(5)">user2_change</th>
+                </tr>
+            </table>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,92 +1,72 @@
-let users;
+let transactions;
 
-function loadUsers() {
+function loadTransactions() {
     $.when(
-        getUsers()
+        getTransactions()
     ).then(function() {
-        renderUsers();
+        renderTransactions();
     })
 }
 
-// get the users from the server
-function getUsers() {
+// get the transactions from the server
+function getTransactions() {
     let deferred = $.Deferred();
     $.ajax({
-        url: "http://127.0.0.1:5000/api/a/users",
+        url: "http://127.0.0.1:5000/api/a/transactions",
         dataType: "json",
         type: "GET",
         success: function(result) {
-            users = result;
+            transactions = result;
             deferred.resolve();
         },
         error: function() {
-            users = [];
+            transactions = [];
             deferred.resolve();
         }
     });
     return deferred.promise();
 }
 
-// render the users on the page
-function renderUsers() {
-    for(let i = 0; i < users.length; i++) {
-        $('#usersTable tr:last').after('<tr>' +
-            '<td>' + users[i][0] + '</td>' +
-            '<td>' + users[i][1] + '</td>' +
-            '<td>' + users[i][3] + '</td>' +
-            '<td>' + users[i][2] + '</td>' +
-            '<td style="width: 5%"><button type="button" onclick="updateUser(' + i + ')">Update</button></td>' +
-            '<td style="width: 5%"><button type="submit" onclick="freezeUser(' + users[i][0] + ')">Freeze</button></td>' +
-            '<td style="width: 5%"><button type="submit" onclick="unfreezeUser(' + users[i][0] + ')">Unfreeze</button></td>' +
-            '<td style="width: 5%"><button type="submit" onclick="deleteUser(' + users[i][0] + ')">Delete</button></td>' +
+// render the transactions on the page
+function renderTransactions() {
+    for(let i = 0; i < transactions.length; i++) {
+        $('#transactionsTable tr:last').after('<tr>' +
+            '<td>' + transactions[i][0] + '</td>' +
+            '<td>' + transactions[i][1] + '</td>' +
+            '<td>' + transactions[i][2] + '</td>' +
+            '<td>' + transactions[i][3] + '</td>' +
+            '<td>' + transactions[i][4] + '</td>' +
+            '<td>' + transactions[i][5] + '</td>' +
+            '<td style="width: 5%"><button type="submit" onclick="freezeTransaction(' + transactions[i][0] + ')">Freeze</button></td>' +
+            '<td style="width: 5%"><button type="submit" onclick="unfreezeTransaction(' + transactions[i][0] + ')">Unfreeze</button></td>' +
             + '</tr>'
         );
     }
 }
 
-// delete user
-function deleteUser(userId) {
+// freeze transaction
+function freezeTransaction(transactionId) {
     // set form action to delete
-    $("#usersTableForm").attr("action", "/api/a/delete_user")
-        .append('<input type="hidden" name="user_id" value="' + userId + '">');
+    $("#transactionsTableForm").attr("action", "/api/a/freeze_transaction")
+        .append('<input type="hidden" name="transaction_id" value="' + transactionId + '">');
 }
 
-// freeze user
-function freezeUser(userId) {
+// unfreeze transaction
+function unfreezeTransaction(transactionId) {
     // set form action to delete
-    $("#usersTableForm").attr("action", "/api/a/freeze_user")
-        .append('<input type="hidden" name="user_id" value="' + userId + '">');
+    $("#transactionsTableForm").attr("action", "/api/a/unfreeze_transaction")
+        .append('<input type="hidden" name="transaction_id" value="' + transactionId + '">');
 }
 
-function unfreezeUser(userId) {
-    // set form action to delete
-    $("#usersTableForm").attr("action", "/api/a/unfreeze_user")
-        .append('<input type="hidden" name="user_id" value="' + userId + '">');
-}
-
-// update user
-function updateUser(i) {
-    $("#updateUserFormHeader").text("Update " + users[i][1]);
-    $("#newEmailInput").val(users[i][1]);
-    $("#newRoleInput").val(users[i][2]);
-    $("#newBalanceInput").val(users[i][3]);
-    $("#userId").val(users[i][0]);
-    $("#updateUserForm").show();
-}
-
-function closeUpdateUserForm() {
-    $("#updateUserForm").hide();
-}
-
-// dynamically search through users
+// dynamically search through transactions
 function dynamicSearch() {
-    let input = document.getElementById("searchUsersInput");
+    let input = document.getElementById("searchTransactionsInput");
     let filter = input.value.toLowerCase();
-    let table = document.getElementById("usersTable");
+    let table = document.getElementById("transactionsTable");
     let rows = table.getElementsByTagName("tr");
 
     for (let i = 0; i < rows.length; i++) {
-        let td = rows[i].getElementsByTagName("td")[1];
+        let td = rows[i].getElementsByTagName("td")[0];
         if (td) {
             let txtValue = td.textContent || td.innerText;
             if (txtValue.toLowerCase().indexOf(filter) > -1) {
@@ -100,7 +80,7 @@ function dynamicSearch() {
 
 function sortTable(n) {
     let table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
-    table = document.getElementById("usersTable");
+    table = document.getElementById("transactionsTable");
     switching = true;
 
     //Set the sorting direction to ascending:

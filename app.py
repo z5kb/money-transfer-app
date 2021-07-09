@@ -57,10 +57,6 @@ def settings_get():
 @login_required
 @roles_required(("user",))
 def settings_post():
-    user = None
-    new_email = None
-    new_pass = None
-
     try:
         action = request.form["action"]
 
@@ -94,6 +90,13 @@ def admin_get():
 @roles_required(("admin",))
 def admin_users_get():
     return render_template("admin_users.html")
+
+
+@app.route("/a/t", methods=["GET"])
+@login_required
+@roles_required(("admin",))
+def admin_transactions_get():
+    return render_template("admin_transactions.html")
 
 
 @app.route("/login", methods=["GET"])
@@ -171,6 +174,19 @@ def api_admin_get_users():
     return response
 
 
+@app.route("/api/a/transactions", methods=["GET"])
+@login_required
+@roles_required(("admin",))
+def api_admin_get_transactions():
+    transactions = db.get_transactions()
+    response = app.response_class(
+        response=json.dumps(transactions, indent=4),
+        status=200,
+        mimetype="application/json"
+    )
+    return response
+
+
 @app.route("/api/a/delete_user", methods=["POST"])
 @login_required
 @roles_required(("admin",))
@@ -224,20 +240,43 @@ def api_admin_update_user():
 @login_required
 @roles_required(("admin",))
 def api_admin_freeze_user():
-    # try:
-    user_id = request.form["user_id"]
-    assert user_id is not None
+    try:
+        user_id = request.form["user_id"]
+        assert user_id is not None
 
-    user = db.get_user_by_id(user_id)
-    assert user is not None
+        user = db.get_user_by_id(user_id)
+        assert user is not None
 
-    # update user's role
-    user.set_role("frozen")
+        # update user's role
+        user.set_role("frozen")
 
-    # commit changes to db
-    db.update_user(user)
-    # except:
-    #     return "error in post request"
+        # commit changes to db
+        db.update_user(user)
+        db.freeze_user_open_transactions(user)
+    except:
+        return "error in post request"
+    return redirect("/a/u")
+
+
+@app.route("/api/a/unfreeze_user", methods=["POST"])
+@login_required
+@roles_required(("admin",))
+def api_admin_unfreeze_user():
+    try:
+        user_id = request.form["user_id"]
+        assert user_id is not None
+
+        user = db.get_user_by_id(user_id)
+        assert user is not None
+
+        # update user's role
+        user.set_role("user")
+
+        # commit changes to db
+        db.update_user(user)
+        db.unfreeze_user_transactions(user)
+    except:
+        return "error in post request"
     return redirect("/a/u")
 
 
@@ -250,6 +289,48 @@ def api_get_transactions():
         mimetype="application/json"
     )
     return response
+
+
+@app.route("/api/a/freeze_transaction", methods=["POST"])
+@login_required
+@roles_required(("admin",))
+def api_admin_freeze_transaction():
+    try:
+        transaction_id = request.form["transaction_id"]
+        assert transaction_id is not None
+
+        transaction = db.get_transaction_by_id(transaction_id)
+        assert transaction is not None
+
+        # update transaction's status
+        transaction.set_status("frozen")
+
+        # commit changes to db
+        db.freeze_transaction(transaction)
+    except:
+        return "error in post request"
+    return redirect("/a/t")
+
+
+@app.route("/api/a/unfreeze_transaction", methods=["POST"])
+@login_required
+@roles_required(("admin",))
+def api_admin_unfreeze_transaction():
+    try:
+        transaction_id = request.form["transaction_id"]
+        assert transaction_id is not None
+
+        transaction = db.get_transaction_by_id(transaction_id)
+        assert transaction is not None
+
+        # update transaction's status
+        transaction.set_status("open")
+
+        # commit changes to db
+        db.freeze_transaction(transaction)
+    except:
+        return "error in post request"
+    return redirect("/a/t")
 
 
 @app.route("/api/create_transaction", methods=["POST"])
@@ -286,9 +367,19 @@ def api_complete_transaction(answer=None):
     # is the transaction id
     parsed_answer = answer.split(";", 1)
 
+    transaction = db.get_transaction_by_id(parsed_answer[1])
+
     # check if the initiator is trying to accept his own transfer
-    if current_user.get_id() == db.get_transaction(parsed_answer[1]).get_user1_id() and parsed_answer == "accept":
+    if current_user.get_id() == transaction.get_user1_id() and parsed_answer == "accept":
         flash("You can't accept your own transfer.")
+        return redirect("/h")
+
+    # check if the transaction is open
+    if transaction.get_status() != "open":
+        if transaction.get_status() == "frozen":
+            flash("This transaction has been frozen. Contact an administrator if you think this is a mistake.")
+        else:
+            flash("You can't accept a transaction which is not open.")
         return redirect("/h")
 
     # compete transaction
@@ -340,6 +431,8 @@ def api_complete_transaction(answer=None):
 @app.route("/unauthorized", methods=["GET"])
 @login_required
 def unauthorized():
+    if current_user.get_role() == "frozen":
+        return render_template("frozen.html")
     return render_template("unauthorized.html")
 
 
