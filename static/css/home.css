@@ -15,23 +15,23 @@
     margin-bottom: 12px;
 }
 
-#usersTable {
+#transactionsTable {
     border-collapse: collapse;
     width: 100%;
     border: 1px solid #ddd;
     font-size: 18px;
 }
 
-#usersTable th, #usersTable td {
+#transactionsTable th, #transactionsTable td {
     text-align: left;
     padding: 12px;
 }
 
-#usersTable tr {
+#transactionsTable tr {
     border-bottom: 1px solid #ddd;
 }
 
-#usersTable tr.header, #usersTable tr:hover {
+#transactionsTable tr.header, #transactionsTable tr:hover {
     background-color: #f1f1f1;
 }
 

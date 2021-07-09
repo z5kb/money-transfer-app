@@ -24,3 +24,6 @@ class Transaction:
 
     def get_user2_change(self):
         return self.__user2_change
+
+    def set_status(self, new_status):
+        self.__status = new_status
