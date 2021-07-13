@@ -33,7 +33,7 @@ function getUsers() {
 // render the users on the page
 function renderUsers() {
     for(let i = 0; i < users.length; i++) {
-        $('#transactionsTable tr:last').after('<tr><td style="width: 15%">' +
+        $('#usersTable tr:last').after('<tr><td style="width: 15%">' +
             '<button type="button" onclick="addUserToTransferReceivers(' + i + ')">Add</button>' +
             '</td><td>' + users[i][1] + '</td></tr>');
     }
@@ -57,7 +57,7 @@ function addUserToTransferReceivers(i) {
 function dynamicSearch() {
     let input = document.getElementById("searchUsersInput");
     let filter = input.value.toLowerCase();
-    let table = document.getElementById("transactionsTable");
+    let table = document.getElementById("usersTable");
     let rows = table.getElementsByTagName("tr");
 
     for (let i = 0; i < rows.length; i++) {

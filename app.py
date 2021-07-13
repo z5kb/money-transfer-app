@@ -1,22 +1,22 @@
 import time
 
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template, request, redirect, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user, login_user, login_required, logout_user
 from itsdangerous import json
 from werkzeug.security import generate_password_hash
 from roles_required import roles_required
-from flask_qrcode import QRcode
+import paypalrestsdk
 
 app = Flask(__name__)
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.secret_key = "todo-this-really-needs-to-be-changed"
 psql = SQLAlchemy(app)
-QRcode(app)
 
 from user import User
 from transaction import Transaction
+from paypal_transaction import PaypalTransaction
 from database import Database
 
 db = Database()
@@ -25,10 +25,83 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "/login"
 
+paypalrestsdk.configure({
+    "mode": "sandbox",  # sandbox or live
+    "client_id": "AZEzumjaGOMv3kcWIMPP3Aqg4EjSfTLXL8A60tqpQpTy0u2LCG427HZmqPvXKQYa6_hxd6VL6CPDsHTB",
+    "client_secret": "EI3471ARxvtpdAm8OEPr5_l2lGXb9Csir-DlhJYKMVw5Vk7N-tu0XweE3pEGLHO3uRvCCbRPl-Ql3_16"})
+
 
 @app.route("/")
 def root():
     return render_template("root.html")
+
+
+@app.route("/h/paypal")
+@login_required
+def paypal():
+    return render_template("paypal.html")
+
+
+@app.route("/api/payment", methods=["POST"])
+@login_required
+def paypal_start_payment():
+    try:
+        temp = request.form["0"]
+        amount = str(float(temp))
+
+        p = paypalrestsdk.Payment({
+            "intent": "sale",
+            "payer": {
+                "payment_method": "paypal"},
+            "redirect_urls": {
+                "return_url": "http://localhost:3000/payment/execute",
+                "cancel_url": "http://localhost:3000/"},
+            "transactions": [{
+                "item_list": {
+                    "items": [{
+                        "name": "add money",
+                        "sku": "Add money to your balance",
+                        "price": amount,
+                        "currency": "EUR",
+                        "quantity": 1}]},
+                "amount": {
+                    "total": amount,
+                    "currency": "EUR"},
+                "description": "This is the payment transaction description."}]})
+        if p.create():
+            print("Payment success")
+            t = PaypalTransaction(db.get_paypal_transactions_count(), current_user.get_id(), amount)
+            db.add_paypal_transaction(t)
+            print("committed to db")
+        else:
+            print(p.error)
+        return jsonify({"paymentID": p.id})
+    except:
+        return "error"
+
+
+@app.route("/api/execute", methods=["POST"])
+@login_required
+def paypal_execute_payment():
+    success = False
+    print(request.form["paymentID"])
+    p = paypalrestsdk.Payment.find(request.form["paymentID"])
+    if p.execute({"payer_id": request.form["payerID"]}):
+        print("Execute success")
+        success = True
+
+        # update transaction
+        t = db.get_latest_paypal_transaction_by_user_id(current_user.get_id())
+        t.set_status("completed")
+        db.update_paypal_transaction(t)
+
+        # update user
+        old_balance = current_user.get_balance()
+        current_user.set_balance(old_balance + t.get_amount())
+        db.update_user(current_user)
+    else:
+        print(p.error)
+    return jsonify({"success": success})
 
 
 @app.route("/h", methods=["GET"])
@@ -353,6 +426,7 @@ def api_create_transaction():
     return redirect("/h")
 
 
+# TODO check if the user is accepting his own transaction
 # TODO add asserts
 @app.route("/api/complete_transaction", methods=["POST"])
 @login_required
