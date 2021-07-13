@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Settings</title>
-    <script src="/static/js/settings.js"></script>
     <script src="/static/js/jquery.js"></script>
+    <script src="/static/js/settings.js"></script>
     <link rel="stylesheet" href="/static/css/settings.css">
 </head>
 <body>
     <div class="sidenav">
         <a onclick="renderProfile({{ user.get_id() }})">Profile</a>
+        <a onclick="loadPaypalTransactions()">PayPal Transactions</a>
     </div>
 
     <div id="main" class="main">

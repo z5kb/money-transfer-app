@@ -62,11 +62,12 @@ class Database:
                    "user_id int not null,"
                    "amount float not null,"
                    "status paypal_transactions_status_enum,"
-                   "timestamp timestamp default current_timestamp"
+                   "timestamp timestamp default current_timestamp,"
+                   "FOREIGN KEY(user_id) REFERENCES Users(id)"
                    ");")
-        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 1.0, 'completed');")
-        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 2.0, 'completed');")
-        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 3.0, 'completed');")
+        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 1.36, 'completed');")
+        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 2.73, 'completed');")
+        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 345.14, 'completed');")
 
     @staticmethod
     def add_user(user):
@@ -224,6 +225,25 @@ class Database:
         for r in rows:
             return PaypalTransaction(r[0], r[1], r[2], r[3])
         return None
+
+    @staticmethod
+    def get_paypal_transactions_as_list_of_current_user(current_user):
+        rows = db.execute("SELECT * FROM PaypalTransactions WHERE user_id = {} ORDER BY timestamp DESC;"
+                          .format(current_user.get_id()))
+
+        transactions = []
+        for r in rows:
+            transactions.append([r[2], r[3], str(r[4])])
+        return transactions
+
+    @staticmethod
+    def get_paypal_transactions():
+        rows = db.execute("SELECT * FROM PaypalTransactions ORDER BY timestamp DESC;")
+
+        transactions = []
+        for r in rows:
+            transactions.append([r[0], r[1], r[2], r[3], str(r[4])])
+        return transactions
 
     @staticmethod
     def get_latest_paypal_transaction_by_user_id(u_id):
