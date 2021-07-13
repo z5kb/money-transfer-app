@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PayPal Transactions</title>
+    <script src="/static/js/jquery.js"></script>
+    <script src="/static/js/admin_paypal_transactions.js"></script>
+    <link rel="stylesheet" href="/static/css/admin_paypal_transactions.css">
+</head>
+<body onload="loadTransactions()">
+    <input type="text" id="searchPaypalTransactionsInput" onkeyup="dynamicSearch()" placeholder="Search paypal transactions by id..."
+           title="Type in a name">
+
+    <div class="scrollable">
+        <table id="paypalTransactionsTable">
+            <tr class="header">
+                <th onclick="sortTable(0)">id</th>
+                <th onclick="sortTable(1)">user_id</th>
+                <th onclick="sortTable(2)">amount</th>
+                <th onclick="sortTable(3)">status</th>
+                <th onclick="sortTable(4)">timestamp</th>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

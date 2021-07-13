@@ -1,39 +1,25 @@
 let paypalTransactions;
 
-function renderProfile(userId) {
-    // clear main and render the form
-    $("#main").empty()
-        .append('<form id="updateProfileForm" action="/h/settings" method="post"></form>');
-    $("#updateProfileForm")
-        .append('<h2>New e-mail</h2>')
-        .append('<input type="text" name="new_email" placeholder="Type the current one if you do not want to change..." required>')
-        .append('<h2>New password</h2>')
-        .append('<input type="password" name="new_pass" placeholder="Type the current one if you do not want to change..." required>')
-        .append('<br><br><input type="hidden" name="action" value="update profile">')
-        .append('<input type="hidden" name="user_id" value=' + userId + '>')
-        .append('<input type="submit" value="Done">');
-}
-
-function loadPaypalTransactions() {
+function loadTransactions() {
     $.when(
-        getPaypalTransactions()
+        getTransactions()
     ).then(function() {
-        renderPaypalTransactions();
+        renderTransactions();
     })
 }
 
-// get the users from the server
-function getPaypalTransactions() {
+// get the transactions from the server
+function getTransactions() {
     let deferred = $.Deferred();
     $.ajax({
-        url: "http://127.0.0.1:5000/api/paypal_transactions",
+        url: "http://127.0.0.1:5000/api/a/paypal_transactions",
         dataType: "json",
         type: "GET",
-        success: function (result) {
+        success: function(result) {
             paypalTransactions = result;
             deferred.resolve();
         },
-        error: function () {
+        error: function() {
             paypalTransactions = [];
             deferred.resolve();
         }
@@ -41,29 +27,37 @@ function getPaypalTransactions() {
     return deferred.promise();
 }
 
-function renderPaypalTransactions() {
-    // clear main and create the transactions table
-    $("#main").empty().append(
-        '<div>' +
-            '<table id="paypalTransactionsTable">' +
-                '<tr class="header">' +
-                    '<th onclick="sortTable(0)">Amount (EUR)</th>' +
-                    '<th onclick="sortTable(1)">Status</th>' +
-                    '<th onclick="sortTable(2)">Timestamp</th>' +
-                '</tr>' +
-            '</table>' +
-        '</div>'
-    );
-
-    // render the transactions in the table
+// render the transactions on the page
+function renderTransactions() {
     for(let i = 0; i < paypalTransactions.length; i++) {
-        $('#paypalTransactionsTable tr:last').after(
-            '<tr>' +
+        $('#paypalTransactionsTable tr:last').after('<tr>' +
             '<td>' + paypalTransactions[i][0] + '</td>' +
             '<td>' + paypalTransactions[i][1] + '</td>' +
             '<td>' + paypalTransactions[i][2] + '</td>' +
-            '</tr>'
+            '<td>' + paypalTransactions[i][3] + '</td>' +
+            '<td>' + paypalTransactions[i][4] + '</td>' +
+            + '</tr>'
         );
+    }
+}
+
+// dynamically search through transactions
+function dynamicSearch() {
+    let input = document.getElementById("searchPaypalTransactionsInput");
+    let filter = input.value.toLowerCase();
+    let table = document.getElementById("paypalTransactionsTable");
+    let rows = table.getElementsByTagName("tr");
+
+    for (let i = 0; i < rows.length; i++) {
+        let td = rows[i].getElementsByTagName("td")[0];
+        if (td) {
+            let txtValue = td.textContent || td.innerText;
+            if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                rows[i].style.display = "";
+            } else {
+                rows[i].style.display = "none";
+            }
+        }
     }
 }
 

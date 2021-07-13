@@ -3,8 +3,8 @@
 }
 
 .scrollable {
-    overflow:scroll;
-    height:100px;
+    overflow: scroll;
+    height: 100px;
 }
 
 #searchUsersInput {

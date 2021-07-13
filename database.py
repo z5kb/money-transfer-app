@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash
 
 from user import User
 from transaction import Transaction
+from paypal_transaction import PaypalTransaction
 
 db_string = "postgresql://telebidPractice:telebidPractice@localhost"
 db = create_engine(db_string)
@@ -12,6 +13,7 @@ db = create_engine(db_string)
 class Database:
     def __init__(self):
         db.execute("DROP TABLE IF EXISTS Transactions;")
+        db.execute("DROP TABLE IF EXISTS PaypalTransactions;")
         db.execute("DROP TABLE IF EXISTS Users;")
         db.execute("DROP TYPE IF EXISTS user_role_enum;")
         db.execute("CREATE TYPE user_role_enum AS ENUM ('user', 'admin', 'frozen');")
@@ -51,6 +53,21 @@ class Database:
                    ");")
         db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(1, 2, 5, -5);")
         db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(2, 1, 5, -5);")
+
+        # create table for the PayPal transactions
+        db.execute("DROP TYPE IF EXISTS paypal_transactions_status_enum;")
+        db.execute("CREATE TYPE paypal_transactions_status_enum AS ENUM ('failed', 'completed', 'in progress');")
+        db.execute("CREATE TABLE IF NOT EXISTS PaypalTransactions ("
+                   "id serial not null primary key,"
+                   "user_id int not null,"
+                   "amount float not null,"
+                   "status paypal_transactions_status_enum,"
+                   "timestamp timestamp default current_timestamp,"
+                   "FOREIGN KEY(user_id) REFERENCES Users(id)"
+                   ");")
+        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 1.36, 'completed');")
+        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 2.73, 'completed');")
+        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 345.14, 'completed');")
 
     @staticmethod
     def add_user(user):
@@ -92,7 +109,7 @@ class Database:
 
         users = []
         for r in rows:
-            if current_user.get_email() != r[1]:
+            if current_user.get_email() != r[1] and r[3] == "user":
                 users.append([r[0], r[1]])
         return users
 
@@ -202,6 +219,53 @@ class Database:
         return True
 
     @staticmethod
+    def get_paypal_transaction_by_id(t_id):
+        rows = db.execute("SELECT * FROM PaypalTransactions WHERE id = {};"
+                          .format(t_id))
+        for r in rows:
+            return PaypalTransaction(r[0], r[1], r[2], r[3])
+        return None
+
+    @staticmethod
+    def get_paypal_transactions_as_list_of_current_user(current_user):
+        rows = db.execute("SELECT * FROM PaypalTransactions WHERE user_id = {} ORDER BY timestamp DESC;"
+                          .format(current_user.get_id()))
+
+        transactions = []
+        for r in rows:
+            transactions.append([r[2], r[3], str(r[4])])
+        return transactions
+
+    @staticmethod
+    def get_paypal_transactions():
+        rows = db.execute("SELECT * FROM PaypalTransactions ORDER BY timestamp DESC;")
+
+        transactions = []
+        for r in rows:
+            transactions.append([r[0], r[1], r[2], r[3], str(r[4])])
+        return transactions
+
+    @staticmethod
+    def get_latest_paypal_transaction_by_user_id(u_id):
+        rows = db.execute("SELECT * FROM PaypalTransactions WHERE user_id = {} ORDER BY timestamp DESC;"
+                          .format(u_id))
+        for r in rows:
+            return PaypalTransaction(r[0], r[1], r[2], r[3], r[4])
+        return None
+
+    @staticmethod
+    def add_paypal_transaction(t):
+        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES({}, {}, '{}');"
+                   .format(t.get_user_id(), t.get_amount(), t.get_status()))
+        return True
+
+    @staticmethod
+    def update_paypal_transaction(t):
+        db.execute("UPDATE PaypalTransactions SET user_id = {}, amount = {}, status = '{}' WHERE id = {};"
+                   .format(t.get_user_id(), t.get_amount(), t.get_status(), t.get_id()))
+        return True
+
+    @staticmethod
     def get_users_count():
         rows = db.execute("SELECT COUNT(id) FROM Users;")
 
@@ -212,6 +276,14 @@ class Database:
     @staticmethod
     def get_transactions_count():
         rows = db.execute("SELECT COUNT(id) FROM Transactions;")
+
+        for r in rows:
+            return r[0]
+        return None
+
+    @staticmethod
+    def get_paypal_transactions_count():
+        rows = db.execute("SELECT COUNT(id) FROM PaypalTransactions;")
 
         for r in rows:
             return r[0]

@@ -1,22 +1,20 @@
-import time
-
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template, request, redirect, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user, login_user, login_required, logout_user
 from itsdangerous import json
 from werkzeug.security import generate_password_hash
 from roles_required import roles_required
-from flask_qrcode import QRcode
+import paypalrestsdk
 
 app = Flask(__name__)
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.secret_key = "todo-this-really-needs-to-be-changed"
 psql = SQLAlchemy(app)
-QRcode(app)
 
 from user import User
 from transaction import Transaction
+from paypal_transaction import PaypalTransaction
 from database import Database
 
 db = Database()
@@ -24,6 +22,11 @@ db = Database()
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "/login"
+
+paypalrestsdk.configure({
+    "mode": "sandbox",  # sandbox or live
+    "client_id": "AZEzumjaGOMv3kcWIMPP3Aqg4EjSfTLXL8A60tqpQpTy0u2LCG427HZmqPvXKQYa6_hxd6VL6CPDsHTB",
+    "client_secret": "EI3471ARxvtpdAm8OEPr5_l2lGXb9Csir-DlhJYKMVw5Vk7N-tu0XweE3pEGLHO3uRvCCbRPl-Ql3_16"})
 
 
 @app.route("/")
@@ -99,6 +102,13 @@ def admin_transactions_get():
     return render_template("admin_transactions.html")
 
 
+@app.route("/a/p", methods=["GET"])
+@login_required
+@roles_required(("admin",))
+def admin_paypal_transactions_get():
+    return render_template("admin_paypal_transactions.html")
+
+
 @app.route("/login", methods=["GET"])
 def login_get():
     return render_template("login.html")
@@ -162,6 +172,17 @@ def api_get_users():
     return response
 
 
+@app.route("/api/paypal_transactions", methods=["GET"])
+@login_required
+def api_get_paypal_transactions():
+    response = app.response_class(
+        response=json.dumps(db.get_paypal_transactions_as_list_of_current_user(current_user), indent=4),
+        status=200,
+        mimetype="application/json"
+    )
+    return response
+
+
 @app.route("/api/a/users", methods=["GET"])
 @login_required
 @roles_required(("admin",))
@@ -178,9 +199,20 @@ def api_admin_get_users():
 @login_required
 @roles_required(("admin",))
 def api_admin_get_transactions():
-    transactions = db.get_transactions()
     response = app.response_class(
-        response=json.dumps(transactions, indent=4),
+        response=json.dumps(db.get_transactions(), indent=4),
+        status=200,
+        mimetype="application/json"
+    )
+    return response
+
+
+@app.route("/api/a/paypal_transactions", methods=["GET"])
+@login_required
+@roles_required(("admin",))
+def api_admin_get_paypal_transactions():
+    response = app.response_class(
+        response=json.dumps(db.get_paypal_transactions(), indent=4),
         status=200,
         mimetype="application/json"
     )
@@ -353,6 +385,7 @@ def api_create_transaction():
     return redirect("/h")
 
 
+# TODO check if the user is accepting his own transaction
 # TODO add asserts
 @app.route("/api/complete_transaction", methods=["POST"])
 @login_required
@@ -393,39 +426,72 @@ def api_complete_transaction(answer=None):
     return redirect("/h")
 
 
-# # TODO remove/move asserts
-# @app.route("/api/qr/<string:key>", methods=["GET"])
-# @login_required
-# def api_qr_complete_transaction(key):
-#     # parse the input data; first element is the answer (accept or reject), the second
-#     # is the transaction id
-#     parsed_answer = key.split(";", 1)
-#     try:
-#         assert parsed_answer[0] == "accept" or parsed_answer[0] == "reject"
-#         assert isinstance(db.get_transaction(parsed_answer[1]), Transaction)
-#         api_complete_transaction(key)
-#     except:
-#         return "error"
-#     return redirect("/h")
+@app.route("/h/paypal")
+@login_required
+def paypal():
+    return render_template("paypal.html")
 
 
-# @app.route("/api/ping", methods=["GET"])
-# @login_required
-# def ping():
-#     user = db.get_user_by_id(current_user.get_id())
-#     answer = []
-#     if user.has_to_reload_page():
-#         answer.append("reload")
-#     else:
-#         answer.append("do not reload")
-#
-#     response = app.response_class(
-#         response=json.dumps(answer, indent=4),
-#         status=200,
-#         mimetype="application/json"
-#     )
-#
-#     return response
+@app.route("/api/payment", methods=["POST"])
+@login_required
+def paypal_start_payment():
+    try:
+        temp = request.form["0"]
+        amount = str(float(temp))
+
+        p = paypalrestsdk.Payment({
+            "intent": "sale",
+            "payer": {
+                "payment_method": "paypal"},
+            "redirect_urls": {
+                "return_url": "http://localhost:3000/payment/execute",
+                "cancel_url": "http://localhost:3000/"},
+            "transactions": [{
+                "item_list": {
+                    "items": [{
+                        "name": "add money",
+                        "sku": "Add money to your balance",
+                        "price": amount,
+                        "currency": "EUR",
+                        "quantity": 1}]},
+                "amount": {
+                    "total": amount,
+                    "currency": "EUR"},
+                "description": "This is the payment transaction description."}]})
+        if p.create():
+            print("Payment success")
+            t = PaypalTransaction(db.get_paypal_transactions_count(), current_user.get_id(), amount)
+            db.add_paypal_transaction(t)
+            print("committed to db")
+        else:
+            print(p.error)
+        return jsonify({"paymentID": p.id})
+    except:
+        return "error"
+
+
+@app.route("/api/execute", methods=["POST"])
+@login_required
+def paypal_execute_payment():
+    success = False
+    print(request.form["paymentID"])
+    p = paypalrestsdk.Payment.find(request.form["paymentID"])
+    if p.execute({"payer_id": request.form["payerID"]}):
+        print("Execute success")
+        success = True
+
+        # update transaction
+        t = db.get_latest_paypal_transaction_by_user_id(current_user.get_id())
+        t.set_status("completed")
+        db.update_paypal_transaction(t)
+
+        # update user
+        old_balance = current_user.get_balance()
+        current_user.set_balance(old_balance + t.get_amount())
+        db.update_user(current_user)
+    else:
+        print(p.error)
+    return jsonify({"success": success})
 
 
 @app.route("/unauthorized", methods=["GET"])
