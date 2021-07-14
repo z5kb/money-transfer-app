@@ -5,6 +5,7 @@ function loadTransactions() {
         getTransactions()
     ).then(function() {
         renderTransactions();
+        $("#searchPaypalTransactionsInput").focus();
     })
 }
 

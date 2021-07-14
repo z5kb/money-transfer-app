@@ -1,7 +1,3 @@
-* {
-    box-sizing: border-box;
-}
-
 .scrollable {
     overflow: scroll;
     height: 100px;
@@ -16,15 +12,18 @@
 }
 
 #transactionsTable {
-    border-collapse: collapse;
+    /*border-collapse: collapse;*/
+    border: none;
     width: 100%;
-    border: 1px solid #ddd;
+    /*border: 1px solid #ddd;*/
     font-size: 18px;
+
 }
 
 #transactionsTable th, #transactionsTable td {
-    text-align: left;
+    text-align: center;
     padding: 12px;
+    width: 25%;
 }
 
 #transactionsTable tr {
@@ -33,6 +32,7 @@
 
 #transactionsTable tr.header, #transactionsTable tr:hover {
     background-color: #f1f1f1;
+    /*background: #f1f1f1;*/
 }
 
 /* set position of the whole settingsDropdown div */
@@ -43,13 +43,16 @@
 }
 
 .settingsDropdownButton {
-    background-color: #3498DB;
+    background: #3498DB url("/static/profile-icon.ico") no-repeat center /*4px*/;
+    background-size: 40px;
+    width: 64px;
+    height: 48px;
     color: white;
     padding: 16px;
     font-size: 16px;
     border: none;
     cursor: pointer;
-    border-radius: 10px;
+    border-radius: 5px;
 }
 
 .settingsDropdownButton:hover, .settingsDropdownButton:focus {
@@ -57,21 +60,21 @@
 }
 
 .settingsDropdownContents {
-  display: none;
-  position: absolute;
-  background-color: #f1f1f1;
-  min-width: 160px;
-  overflow: auto;
-  box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
-  right: 0;
-  z-index: 1;
+    display: none;
+    position: absolute;
+    background-color: #f1f1f1;
+    min-width: 160px;
+    overflow: auto;
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+    right: 0;
+    z-index: 1;
 }
 
 .settingsDropdownContents a {
-  color: black;
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
 }
 
 .settingsDropdownContents a:hover {
@@ -84,69 +87,112 @@
 }
 
 /* Button used to open the contact form - fixed at the bottom of the page */
-.open-button {
-  background-color: #555;
-  color: white;
-  padding: 16px 20px;
-  border: none;
-  cursor: pointer;
-  opacity: 0.8;
-  position: fixed;
-  bottom: 23px;
-  right: 28px;
-  width: 280px;
+.newTransactionOpenButton {
+    background-color: #555;
+    color: white;
+    padding: 16px 20px;
+    border: none;
+    cursor: pointer;
+    opacity: 0.8;
+    position: fixed;
+    bottom: 23px;
+    right: 1%;
+    width: 19%;
 }
 
 /* The popup form - hidden by default */
-.form-popup {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  right: 15px;
-  border: 3px solid #f1f1f1;
-  z-index: 9;
+.newTransactionDiv {
+    width: 20%;
+    display: none;
+    position: fixed;
+    bottom: 0;
+    right: 1%;
+    border: 3px solid #f1f1f1;
+    z-index: 9;
+    background: white;
 }
 
 /* Add styles to the form container */
-.form-container {
-  max-width: 300px;
-  padding: 10px;
-  background-color: white;
+.newTransactionForm {
+    /*max-width: 300px;*/
+    width: 100%;
+    padding: 10px;
+    background-color: white;
 }
 
 /* Full-width input fields */
-.form-container input[type=text], .form-container input[type=password] {
-  width: 100%;
-  padding: 15px;
-  margin: 5px 0 22px 0;
-  border: none;
-  background: #f1f1f1;
+.newTransactionForm input[type=text], .newTransactionForm input[type=password] {
+    width: 100%;
+    padding: 15px;
+    margin: 5px 0 22px 0;
+    border: none;
+    background: #f1f1f1;
 }
 
 /* When the inputs get focus, do something */
-.form-container input[type=text]:focus, .form-container input[type=password]:focus {
-  background-color: #ddd;
-  outline: none;
+.newTransactionForm input[type=text]:focus, .newTransactionForm input[type=password]:focus {
+    background-color: #ddd;
+    outline: none;
 }
 
 /* Set a style for the submit/login button */
-.form-container .btn {
-  background-color: #04AA6D;
-  color: white;
-  padding: 16px 20px;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  margin-bottom:10px;
-  opacity: 0.8;
+.newTransactionForm .newTransactionSubmitButton {
+    background-color: #04AA6D;
+    color: white;
+    padding: 16px 20px;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom:10px;
+    opacity: 0.8;
 }
 
 /* Add a red background color to the cancel button */
-.form-container .cancel {
-  background-color: red;
+.newTransactionForm .newTransactionCancelButton {
+    background-color: red;
 }
 
 /* Add some hover effects to buttons */
-.form-container .btn:hover, .open-button:hover {
-  opacity: 1;
+.newTransactionForm .newTransactionSubmitButton:hover, .newTransactionOpenButton:hover {
+    opacity: 1;
 }
+
+.newTransactionFormScrollable {
+    overflow: scroll;
+    height: 100px;
+    width: 100%;
+}
+
+.transactionsTableDiv {
+    /*overflow: scroll;*/
+    /*height: 500px;*/
+    width: 80%;
+}
+
+h1 {
+    margin-left: 50px;
+    margin-bottom: 0;
+    display: inline-block;
+    font-size: 400%;
+}
+
+#moneyDiv {
+    width: 550px;
+}
+
+.addMoneyButton {
+    width: 160px;
+    height: 32px;
+    border: none;
+    font-size: large;
+    background: #e1eef6;
+    color: #1491db;
+    margin-bottom: 50px;
+    margin-top: 65px;
+    float: right;
+}
+
+.addMoneyButton:hover {
+    background: #d4e6fc;
+}
+

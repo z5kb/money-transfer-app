@@ -11,14 +11,18 @@
     <input type="text" id="searchUsersInput" onkeyup="dynamicSearch()" placeholder="Search users by name..."
            title="Type in a name">
 
-    <div class="scrollable">
+    <div{# class="scrollable"#}>
         <form id="usersTableForm" method="post">
             <table id="usersTable">
                 <tr class="header">
-                    <th onclick="sortTable(0)">Id</th>
-                    <th onclick="sortTable(1)">Email</th>
-                    <th onclick="sortTable(2)">Balance</th>
-                    <th onclick="sortTable(3)">Role</th>
+                    <th onclick="sortTable(0)">id</th>
+                    <th onclick="sortTable(1)">email</th>
+                    <th onclick="sortTable(2)">balance</th>
+                    <th onclick="sortTable(3)">role</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
                 </tr>
             </table>
         </form>

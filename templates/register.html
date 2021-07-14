@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Register</title>
-</head>
+    <script src="/static/js/register.js"></script>
+    <link rel="stylesheet" href="/static/css/register.css">
 
-<body>
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             <p>
@@ -15,18 +15,26 @@
             </p>
         {% endif %}
     {% endwith %}
+</head>
 
-    <form method="post">
-        <label>Username
-            <input type="text" name="username" required>
-        </label><br><br>
+<body onload="initFocus();">
+    <div class="registerDiv">
+        <h1 style="font-size: 2vw">Register</h1>
+        <p style="font-size: 1.3vw">Fill in the form to register a new account.</p>
+        <hr>
 
-        <label>Password
-            <input type="password" name="password" required>
-        </label><br><br>
+        <form method="post">
+            <label for="email" style="font-size: 1.4vw"><b>Email</b></label>
+            <input id="email" type="text" name="email" placeholder="Enter an email..." required>
 
-        <input type="submit" value="Register">
-        <a href="/login">Already have an account?</a>
-    </form>
+            <label for="password" style="font-size: 1.4vw"><b>Password</b></label>
+            <input id="password" type="password" name="password" placeholder="Enter a password..." required>
+
+            <input type="submit" value="Register" class="registerSubmitButton">
+        </form>
+
+        <hr>
+        <p>Already have an account? <a href="/login">Log in</a>.</p>
+    </div>
 </body>
 </html>

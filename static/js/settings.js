@@ -6,12 +6,15 @@ function renderProfile(userId) {
         .append('<form id="updateProfileForm" action="/h/settings" method="post"></form>');
     $("#updateProfileForm")
         .append('<h2>New e-mail</h2>')
-        .append('<input type="text" name="new_email" placeholder="Type the current one if you do not want to change..." required>')
+        .append('<input id="new_email" type="text" name="new_email" placeholder="Type the current one if you do not want to change..." required>')
         .append('<h2>New password</h2>')
         .append('<input type="password" name="new_pass" placeholder="Type the current one if you do not want to change..." required>')
         .append('<br><br><input type="hidden" name="action" value="update profile">')
         .append('<input type="hidden" name="user_id" value=' + userId + '>')
         .append('<input type="submit" value="Done">');
+
+    // init focus
+    $("#new_email").focus();
 }
 
 function loadPaypalTransactions() {
@@ -47,9 +50,9 @@ function renderPaypalTransactions() {
         '<div>' +
             '<table id="paypalTransactionsTable">' +
                 '<tr class="header">' +
-                    '<th onclick="sortTable(0)">Amount (EUR)</th>' +
-                    '<th onclick="sortTable(1)">Status</th>' +
-                    '<th onclick="sortTable(2)">Timestamp</th>' +
+                    '<th onclick="sortTable(0)">Timestamp</th>' +
+                    '<th onclick="sortTable(1)">Amount (EUR)</th>' +
+                    '<th onclick="sortTable(2)">Status</th>' +
                 '</tr>' +
             '</table>' +
         '</div>'
@@ -59,9 +62,9 @@ function renderPaypalTransactions() {
     for(let i = 0; i < paypalTransactions.length; i++) {
         $('#paypalTransactionsTable tr:last').after(
             '<tr>' +
+            '<td>' + paypalTransactions[i][2] + '</td>' +
             '<td>' + paypalTransactions[i][0] + '</td>' +
             '<td>' + paypalTransactions[i][1] + '</td>' +
-            '<td>' + paypalTransactions[i][2] + '</td>' +
             '</tr>'
         );
     }

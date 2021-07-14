@@ -6,19 +6,6 @@
     <script src="/static/js/home.js"></script>
     <script src="/static/js/jquery.js"></script>
     <link rel="stylesheet" href="/static/css/home.css">
-</head>
-
-<body onload="hideFlashedMessages()">
-    <div class="settingsDropdown">
-        <button class="settingsDropdownButton" onclick="toggleSettingsDropdownContentsVisibility()">Profile</button>
-        <div id="settingsDropdownContents" class="settingsDropdownContents">
-            <a href="/h/paypal">Add money</a>
-            <a href="/h/settings" target="_blank">Settings</a>
-            <a href="/logout">Log out</a>
-        </div>
-    </div>
-
-    <h2>{{ user.get_balance() }} EUR</h2>
 
     <div id="flashedMessagesDiv">
         {% with messages = get_flashed_messages() %}
@@ -31,11 +18,29 @@
             {% endif %}
         {% endwith %}
     </div>
+</head>
 
-    <button class="open-button" onclick="openForm()">Create Transaction</button>
+<body onload="hideFlashedMessages(); loadTransactions({{ user.get_id() }});">
+    <div class="settingsDropdown">
+        <button class="settingsDropdownButton" onclick="toggleSettingsDropdownContentsVisibility()"></button>
+        <div id="settingsDropdownContents" class="settingsDropdownContents">
+            <a href="/h/settings" target="_blank">Settings</a>
+            <a href="/logout">Log out ({{ user.get_email() }})</a>
+        </div>
+    </div>
 
-    <div class="form-popup" id="myForm">
-        <form id="newTransactionForm" action="/api/create_transaction" class="form-container" method="post">
+    <div id="moneyDiv">
+        <h1>€ {{ user.get_balance() }}</h1>
+        <a id="paypalHref" href="/h/paypal" target="_blank">
+            <button class="addMoneyButton"><b>+ Add money</b></button>
+        </a>
+        <p style="margin-left: 50px; margin-bottom: 40px">Euro is the only supported currency currently.</p>
+    </div>
+
+    <button class="newTransactionOpenButton" onclick="openForm()">Create Transaction</button>
+
+    <div class="newTransactionDiv" id="myForm">
+        <form id="newTransactionForm" action="/api/create_transaction" class="newTransactionForm" method="post">
             <h1>Create a new transaction</h1>
 
             <label><b>Change in your balance</b>
@@ -43,90 +48,34 @@
             </label>
 
             <div id="transferReceiversDiv" style="background: lightblue">
-                <h3 id="transferReceiversHeader">Transfer receivers 0/1</h3>
+                <p><b id="transferReceiversHeader">Transfer receivers 0/1</b></p>
                 <p id="emptySetPlaceholder" style="color: #888487">Select a user below...</p>
             </div>
 
             <input type="text" id="searchUsersInput" onkeyup="dynamicSearch()" placeholder="Search for users..."
                    title="Type in a name">
 
-            <div class="scrollable">
+            <div class="newTransactionFormScrollable">
                 <table id="usersTable">
-                    <tr class="header">
-                        <th>Name</th>
-                    </tr>
+                    <tr class="header"></tr>
                 </table>
             </div>
 
-            <button id="newTransactionSubmitButton" type="submit" class="btn">Done</button>
-            <button type="button" class="btn cancel" onclick="closeForm()">Cancel</button>
+            <button id="newTransactionSubmitButton" type="submit" class="newTransactionSubmitButton">Done</button>
+            <button type="button" class="newTransactionSubmitButton newTransactionCancelButton" onclick="closeForm()">Cancel</button>
         </form>
     </div>
 
-    <table>
-        {% for t in transactions %}
-            {% if t[6] == "current user is initiator" %}
-                {% if t[1] == "closed" %}
-                    <tr style="background: #888487">
-                        <td>Change in your balance: {{ t[4] }}; Change in other person's balance: {{ t[5] }}</td>
-
-                        <td>
-{#                            <button>Accept</button>#}
-                        </td>
-
-                        <td>
-                            <button>Reject</button>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td>Change in your balance: {{ t[4] }}; Change in other person's balance: {{ t[5] }}</td>
-
-                        <td>
-{#                            <form action="/api/complete_transaction" method="post">#}
-{#                                <button type="submit" name="answer" value="accept;{{ t[0] }}">Accept</button>#}
-{#                            </form>#}
-                        </td>
-
-                        <td>
-                            <form action="/api/complete_transaction" method="post">
-                                <button type="submit" name="answer" value="reject;{{ t[0] }}">Reject</button>
-                            </form>
-                        </td>
-                    </tr>
-                {% endif %}
-            {% else %}
-                {% if t[1] == "closed" %}
-                    <tr style="background: #888487">
-                        <td>Change in your balance: {{ t[5] }}; Change in other person's balance: {{ t[4] }}</td>
-
-                        <td>
-                            <button>Accept</button>
-                        </td>
-
-                        <td>
-                            <button>Reject</button>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td>Change in your balance: {{ t[5] }}; Change in other person's balance: {{ t[4] }}</td>
-
-                        <td>
-                            <form action="/api/complete_transaction" method="post">
-                                <button type="submit" name="answer" value="accept;{{ t[0] }}">Accept</button>
-                            </form>
-                        </td>
-
-                        <td>
-                            <form action="/api/complete_transaction" method="post">
-                                <button type="submit" name="answer" value="reject;{{ t[0] }}">Reject</button>
-                            </form>
-                        </td>
-                    </tr>
-                {% endif %}
-            {% endif %}
-        {% endfor %}
-    </table>
+    <div class="transactionsTableDiv">
+        <table id="transactionsTable" cellspacing="0" cellpadding="0">
+            <tr class="header">
+                <th style="width: 30%">Change in your balance</th>
+                <th style="width: 30%">Other user</th>
+                <th>Change in other person's balance</th>
+                <th style="width: 10%"></th>
+                <th style="width: 10%"></th>
+            </tr>
+        </table>
+    </div>
 </body>
 </html>

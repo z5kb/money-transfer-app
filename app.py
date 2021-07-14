@@ -38,15 +38,21 @@ def root():
 @login_required
 @roles_required(("user",))
 def home_get():
-    # add a string to the list which classifies whether the current user is the initiator of the offer or not
-    transactions = db.get_transactions_of_current_user(current_user)
-    for t in transactions:
-        if current_user.get_id() == t[2]:
-            t.append("current user is initiator")
-        else:
-            t.append("current user is not initiator")
-
-    return render_template("home.html", user=current_user, transactions=transactions)
+    # # add a string to the list which classifies whether the current user is the initiator of the offer or not
+    # transactions = db.get_transactions_of_current_user(current_user)
+    #
+    # # check which user is initiator
+    # for t in transactions:
+    #     if current_user.get_id() == t[2]:
+    #         t.append("current user is initiator")
+    #     else:
+    #         t.append("current user is not initiator")
+    #
+    # # replace user's ids with emails
+    # for t in transactions:
+    #     t[2] = db.get_user_email_by_id(t[2])
+    #     t[3] = db.get_user_email_by_id(t[3])
+    return render_template("home.html", user=current_user)
 
 
 @app.route("/h/settings", methods=["GET"])
@@ -116,13 +122,13 @@ def login_get():
 
 @app.route("/login", methods=["POST"])
 def login_post():
-    name = request.form["username"]
+    email = request.form["email"]
     password = request.form["password"]
 
-    if not name or not password:
-        return "Username and password can't be empty"
+    if not email or not password:
+        return "Email and password can't be empty"
 
-    user = db.get_user_by_email(name)
+    user = db.get_user_by_email(email)
     if user is None:
         flash("User does not exist")
         return redirect("/login")
@@ -144,11 +150,11 @@ def register_get():
 
 @app.route("/register", methods=["POST"])
 def register_post():
-    if not request.form["username"] or not request.form["password"]:
+    if not request.form["email"] or not request.form["password"]:
         flash("Username and password should be filled")
         return redirect("/register")
 
-    email = request.form["username"]
+    email = request.form["email"]
     password = generate_password_hash(request.form["password"])
     user = User(db.get_users_count(), email, password, "user", 0)
 
@@ -335,6 +341,8 @@ def api_admin_freeze_transaction():
         assert transaction is not None
 
         # update transaction's status
+        if transaction.get_status() != "open":
+            return "The transaction is not open and you can not freeze it."
         transaction.set_status("frozen")
 
         # commit changes to db
@@ -356,6 +364,8 @@ def api_admin_unfreeze_transaction():
         assert transaction is not None
 
         # update transaction's status
+        if transaction.get_status() != "frozen":
+            return "The transaction is not open and you can not unfreeze it."
         transaction.set_status("open")
 
         # commit changes to db
@@ -370,9 +380,31 @@ def api_admin_unfreeze_transaction():
 def api_create_transaction():
     try:
         user1_change = request.form["change_in_balance"]
-        user2_id = request.form["user2_id"]
+        try:
+            user2_id = request.form["user2_id"]
+        except:
+            flash("Please select the user you want to transfer money with.")
+            return redirect("/h")
     except:
-        return "An answer to the transaction is expected"
+        return "error in post request"
+
+    if "." in user1_change:
+        parsed_user1_change = user1_change.split(".")
+        if len(parsed_user1_change[1]) > 2:
+            flash("You can only enter a number with two digits after the decimal point.")
+            return redirect("/h")
+
+    try:
+        assert type(float(user1_change)) is float
+    except:
+        flash(user1_change + " is not a valid number")
+        return redirect("/h")
+
+    try:
+        assert type(int(user2_id)) is int
+        assert db.get_user_by_id(user2_id) is not None
+    except:
+        return "error in post request"
 
     user2_change = str(-float(user1_change))
     t = Transaction(db.get_transactions_count(), "open", current_user.get_id(), user2_id, user1_change, user2_change)
@@ -403,8 +435,8 @@ def api_complete_transaction(answer=None):
     transaction = db.get_transaction_by_id(parsed_answer[1])
 
     # check if the initiator is trying to accept his own transfer
-    if current_user.get_id() == transaction.get_user1_id() and parsed_answer == "accept":
-        flash("You can't accept your own transfer.")
+    if current_user.get_id() == transaction.get_user1_id() and parsed_answer[0] == "accept":
+        flash("You can't accept a transaction you initiated.")
         return redirect("/h")
 
     # check if the transaction is open

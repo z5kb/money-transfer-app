@@ -1,7 +1,7 @@
 let users;
 let usersGotLoaded = 0;
 let transferReceiverGotChosen = 0;
-let ping;
+let transactions;
 
 function loadUsers() {
     $.when(
@@ -73,41 +73,6 @@ function dynamicSearch() {
     }
 }
 
-// function refreshPage() {
-//     setInterval(function() {
-//         while(1) {
-//             $.when(
-//                 pingServer()
-//             ).then(function() {
-//                 if(ping === 1) {
-//                     window.location.reload(true)
-//                 } else {
-//                     ping = 0
-//                 }
-//             })
-//         }
-//     }, 5000)
-// }
-//
-// // get the users from the server
-// function pingServer() {
-//     let deferred = $.Deferred();
-//     $.ajax({
-//         url: "http://127.0.0.1:5000/api/ping",
-//         dataType: "json",
-//         type: "GET",
-//         success: function(result) {
-//             ping = result;
-//             deferred.resolve();
-//         },
-//         error: function() {
-//             ping = "error";
-//             deferred.resolve();
-//         }
-//     });
-//     return deferred.promise();
-// }
-
 // toggle the visibility of the settingsDropdownContents div
 function toggleSettingsDropdownContentsVisibility() {
     document.getElementById("settingsDropdownContents").classList.toggle("showSettingsDropdownContents");
@@ -142,4 +107,126 @@ function hideFlashedMessages() {
     setTimeout(function() {
         $("#flashedMessagesDiv").remove();
     }, 3000);
+}
+
+function loadTransactions(userId) {
+    $.when(
+        getTransactions()
+    ).then(function() {
+        renderTransactions(userId);
+    })
+}
+
+// get the users from the server
+function getTransactions() {
+    let deferred = $.Deferred();
+    $.ajax({
+        url: "http://127.0.0.1:5000/api/transactions",
+        dataType: "json",
+        type: "GET",
+        success: function(result) {
+            transactions = result;
+            deferred.resolve();
+        },
+        error: function() {
+            transactions = [];
+            deferred.resolve();
+        }
+    });
+    return deferred.promise();
+}
+
+// render the users on the page
+function renderTransactions(userId) {
+    for(let i = 0; i < transactions.length; i++) {
+        if(transactions[i][6] === "== user1") {
+            renderTransactionJS(transactions[i][3], transactions[i][4], transactions[i][5], transactions[i][0], transactions[i][1]);
+        } else if(transactions[i][6] === "!= user1") {
+            renderTransactionJS(transactions[i][2], transactions[i][5], transactions[i][4], transactions[i][0], transactions[i][1]);
+        }
+    }
+}
+
+function renderTransactionJS(otherPerson, currentUserChange, otherUserChange, transactionId, transactionStatus) {
+    let currentUserChangeBackup = currentUserChange;
+
+    // append + in front of currentUserChange if it is not < 0
+    if (currentUserChange.toString()[0] !== "-") {
+        currentUserChange = "+ " + currentUserChange.toString();
+    } else {
+        let currentUserChangeWithoutMinus = currentUserChange.toString().slice(1);
+        currentUserChange = "- " + currentUserChangeWithoutMinus
+    }
+
+    // append " " between the minus and otherUserChange if otherUserChange < 0
+    if (otherUserChange.toString()[0] !== "-") {
+        otherUserChange = "+ " + otherUserChange.toString();
+    } else {
+        let otherUserChangeWithoutMinus = otherUserChange.toString().slice(1);
+        otherUserChange = "- " + otherUserChangeWithoutMinus
+    }
+
+    // render the transaction
+    if(transactionStatus === "frozen") {
+        renderTransactionJQuery(otherPerson, currentUserChange, otherUserChange, transactionId, currentUserChangeBackup,
+            "cadetblue", "cadetblue", "cadetblue",
+            "cadetblue", "background: cadetblue");
+    } else if(transactionStatus === "accepted") {
+        renderTransactionJQuery(otherPerson, currentUserChange, otherUserChange, transactionId, currentUserChangeBackup,
+            "mediumseagreen", "mediumseagreen", "mediumseagreen",
+            "mediumseagreen", "background: mediumseagreen");
+    } else if(transactionStatus === "rejected") {
+        renderTransactionJQuery(otherPerson, currentUserChange, otherUserChange, transactionId, currentUserChangeBackup,
+            "indianred", "indianred", "indianred",
+            "indianred", "background: indianred");
+    } else {
+        renderTransactionJQuery(otherPerson, currentUserChange, otherUserChange, transactionId, currentUserChangeBackup,
+            "indianred", "mediumseagreen", "mediumseagreen",
+            "indianred", "");
+    }
+}
+
+function renderTransactionJQuery(otherPerson, currentUserChange, otherUserChange, transactionId, currentUserChangeBackup,
+                                 backgroundOneOne, backgroundOneTwo, backgroundTwoOne, backgroundTwoTwo, trStyle, transactionStatus) {
+    if (currentUserChangeBackup < 0) {
+        $('#transactionsTable tr:last').after(
+            '<tr style="' + trStyle + '">' +
+            '<td style="background: ' + backgroundOneOne + '; opacity: 0.9">' + currentUserChange + ' EUR</td>' +
+            '<td>' + otherPerson + '</td>' +
+            // '<td style="background: ' + backgroundOneTwo + '; opacity: 0.9">' + otherUserChange + ' EUR</td>' +
+
+            '<td style="width: 12.5%">' +
+                '<form action="/api/complete_transaction" method="post">' +
+                    '<button type="submit" style="width: 80%" name="answer" value="accept;' + transactionId + '">Accept</button>' +
+                '</form>' +
+            '</td>' +
+
+            '<td style="width: 12.5%">' +
+                '<form action="/api/complete_transaction" method="post">' +
+                    '<button type="submit" style="width: 80%" name="answer" value="reject;' + transactionId + '">Reject</button>' +
+                '</form>' +
+            '</td>' +
+            '</tr>'
+        );
+    } else {
+        $('#transactionsTable tr:last').after(
+            '<tr style="' + trStyle + '">' +
+            '<td style="background: ' + backgroundTwoOne + '; opacity: 0.9">' + currentUserChange + ' EUR</td>' +
+            '<td>' + otherPerson + '</td>' +
+            // '<td style="background: ' + backgroundTwoTwo + '; opacity: 0.9">' + otherUserChange + ' EUR</td>' +
+
+            '<td style="width: 12.5%">' +
+                '<form action="/api/complete_transaction" method="post">' +
+                    '<button type="submit" style="width: 80%" name="answer" value="accept;' + transactionId + '">Accept</button>' +
+                '</form>' +
+            '</td>' +
+
+            '<td style="width: 12.5%">' +
+                '<form action="/api/complete_transaction" method="post">' +
+                    '<button type="submit" style="width: 80%" name="answer" value="reject;' + transactionId + '">Reject</button>' +
+                '</form>' +
+            '</td>' +
+            '</tr>'
+        );
+    }
 }
