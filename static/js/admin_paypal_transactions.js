@@ -33,6 +33,7 @@ function renderTransactions() {
     for(let i = 0; i < paypalTransactions.length; i++) {
         $('#paypalTransactionsTable tr:last').after('<tr>' +
             '<td>' + paypalTransactions[i][0] + '</td>' +
+            '<td>' + paypalTransactions[i][5] + '</td>' +
             '<td>' + paypalTransactions[i][1] + '</td>' +
             '<td>' + paypalTransactions[i][2] + '</td>' +
             '<td>' + paypalTransactions[i][3] + '</td>' +
@@ -50,7 +51,7 @@ function dynamicSearch() {
     let rows = table.getElementsByTagName("tr");
 
     for (let i = 0; i < rows.length; i++) {
-        let td = rows[i].getElementsByTagName("td")[0];
+        let td = rows[i].getElementsByTagName("td")[1];
         if (td) {
             let txtValue = td.textContent || td.innerText;
             if (txtValue.toLowerCase().indexOf(filter) > -1) {

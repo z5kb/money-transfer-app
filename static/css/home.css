@@ -169,7 +169,7 @@
     width: 80%;
 }
 
-h1 {
+#userBalanceHeading {
     margin-left: 50px;
     margin-bottom: 0;
     display: inline-block;
@@ -196,3 +196,6 @@ h1 {
     background: #d4e6fc;
 }
 
+#flashedMessagesDiv {
+            
+}

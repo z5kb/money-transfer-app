@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from sqlalchemy import create_engine
 from werkzeug.security import generate_password_hash
 
@@ -11,7 +9,6 @@ db_string = "postgresql://telebidPractice:telebidPractice@localhost"
 db = create_engine(db_string)
 
 
-# TODO replace id with UUID in all tables
 class Database:
     def __init__(self):
         db.execute("DROP TABLE IF EXISTS Transactions;")
@@ -28,7 +25,7 @@ class Database:
                    "has_to_reload_page bool default false"
                    ");")
 
-        user1 = User(1, 'first@fake.org', generate_password_hash('1'), "user", 12.45)
+        user1 = User(1, 'first@fake.org', generate_password_hash('1'), "user", 15.45)
         self.add_user(user1)
         user2 = User(2, 'second@fake.org', generate_password_hash('2'), "user", 5)
         self.add_user(user2)
@@ -41,7 +38,6 @@ class Database:
 
         # user1 is the initiator of the transfer, user2 is the receiver
         db.execute("DROP TYPE IF EXISTS transaction_status_enum;")
-        # TODO check if we need the "failed" option
         db.execute("CREATE TYPE transaction_status_enum AS ENUM ('open', 'accepted', 'rejected', 'frozen');")
         db.execute("CREATE TABLE IF NOT EXISTS Transactions ("
                    "id serial not null primary key,"
@@ -55,24 +51,6 @@ class Database:
                    ");")
         db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(1, 2, 5, -5);")
         db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(2, 1, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(1, 2, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(2, 1, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(1, 2, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(2, 1, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(1, 2, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(1, 2, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(2, 1, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(2, 1, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(1, 2, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(2, 1, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(1, 2, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(2, 1, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(1, 2, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(2, 1, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(1, 2, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(2, 1, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(1, 2, 5, -5);")
-        # db.execute("INSERT INTO Transactions(user1_id, user2_id, user1_change, user2_change) VALUES(2, 1, 5, -5);")
 
         # create table for the PayPal transactions
         db.execute("DROP TYPE IF EXISTS paypal_transactions_status_enum;")
@@ -83,11 +61,16 @@ class Database:
                    "amount float not null,"
                    "status paypal_transactions_status_enum,"
                    "timestamp timestamp default current_timestamp,"
-                   "FOREIGN KEY(user_id) REFERENCES Users(id)"
+                   "FOREIGN KEY(user_id) REFERENCES Users(id),"
+                   "paypal_id text"
                    ");")
         db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 1.36, 'completed');")
         db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 2.73, 'completed');")
         db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 345, 'completed');")
+
+        # prepare statements
+        # db.execute("PREPARE close_transaction(transaction_status_enum, int) AS "
+        #            "UPDATE Transactions SET status = $1 WHERE id = $2;")
 
     @staticmethod
     def add_user(user):
@@ -111,9 +94,8 @@ class Database:
             return User(r[0], r[1], r[2], r[3], r[4])
         return None
 
-    # TODO change this (returning lists of users' data, not users)
     @staticmethod
-    def get_users():
+    def get_users_as_list():
         rows = db.execute("SELECT * FROM Users ORDER BY id;")
 
         users = []
@@ -122,7 +104,6 @@ class Database:
                 users.append([r[0], r[1], r[3], r[4]])
         return users
 
-    # TODO change this (returning lists of users' data, not users)
     @staticmethod
     def get_users_of_current_user(current_user):
         rows = db.execute("SELECT * FROM Users;")
@@ -209,6 +190,17 @@ class Database:
 
         # close transaction
         db.execute("UPDATE Transactions SET status = '{}' WHERE id = {};".format(action + "ed", transaction_id))
+
+        # try:
+        #     print("in try")
+        #     db.execute("EXECUTE close_transaction('{}', {})".format(action + "ed", int(transaction_id)))
+        # except Exception as e:
+        #     print("in except: " + str(e))
+        #     db.execute("PREPARE close_transaction(transaction_status_enum, int) AS "
+        #                "UPDATE Transactions SET status = $1 WHERE id = $2;")
+        #     db.execute("EXECUTE close_transaction('{}', {})".format(action + "ed", int(transaction_id)))
+        # print("outside of try-except")
+
         return True
 
     @staticmethod
@@ -272,7 +264,7 @@ class Database:
 
         transactions = []
         for r in rows:
-            transactions.append([r[2], r[3], str(r[4])])
+            transactions.append([r[2], r[3], str(r[4]), r[5]])
         return transactions
 
     @staticmethod
@@ -281,7 +273,7 @@ class Database:
 
         transactions = []
         for r in rows:
-            transactions.append([r[0], r[1], r[2], r[3], str(r[4])])
+            transactions.append([r[0], r[1], r[2], r[3], str(r[4]), r[5]])
         return transactions
 
     @staticmethod
@@ -300,8 +292,10 @@ class Database:
 
     @staticmethod
     def update_paypal_transaction(t):
-        db.execute("UPDATE PaypalTransactions SET user_id = {}, amount = {}, status = '{}' WHERE id = {};"
-                   .format(t.get_user_id(), t.get_amount(), t.get_status(), t.get_id()))
+        db.execute("UPDATE PaypalTransactions "
+                   "SET user_id = {}, amount = {}, status = '{}', paypal_id = '{}' "
+                   "WHERE id = {};"
+                   .format(t.get_user_id(), t.get_amount(), t.get_status(), t.get_paypal_id(), t.get_id()))
         return True
 
     @staticmethod

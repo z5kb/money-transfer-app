@@ -8,19 +8,22 @@
     <link rel="stylesheet" href="/static/css/home.css">
 
     <div id="flashedMessagesDiv">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <p>
-                    {% for message in messages %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                </p>
-            {% endif %}
-        {% endwith %}
+        <div id="flashedMessagesDiv">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <table>
+                        {% for message in messages %}
+                            <tr><td>{{ message }}</td></tr>
+                        {% endfor %}
+                    </table>
+                {% endif %}
+            {% endwith %}
+        </div>
+
     </div>
 </head>
 
-<body onload="hideFlashedMessages(); loadTransactions({{ user.get_id() }});">
+<body onload="hideFlashedMessages(); loadTransactions();">
     <div class="settingsDropdown">
         <button class="settingsDropdownButton" onclick="toggleSettingsDropdownContentsVisibility()"></button>
         <div id="settingsDropdownContents" class="settingsDropdownContents">
@@ -30,7 +33,7 @@
     </div>
 
     <div id="moneyDiv">
-        <h1>€ {{ user.get_balance() }}</h1>
+        <h1 id="userBalanceHeading">€ {{ user.get_balance() }}</h1>
         <a id="paypalHref" href="/h/paypal" target="_blank">
             <button class="addMoneyButton"><b>+ Add money</b></button>
         </a>
@@ -52,8 +55,7 @@
                 <p id="emptySetPlaceholder" style="color: #888487">Select a user below...</p>
             </div>
 
-            <input type="text" id="searchUsersInput" onkeyup="dynamicSearch()" placeholder="Search for users..."
-                   title="Type in a name">
+            <input type="text" id="searchUsersInput" onkeyup="dynamicSearch()" placeholder="Search for users...">
 
             <div class="newTransactionFormScrollable">
                 <table id="usersTable">
@@ -69,11 +71,11 @@
     <div class="transactionsTableDiv">
         <table id="transactionsTable" cellspacing="0" cellpadding="0">
             <tr class="header">
-                <th style="width: 30%">Change in your balance</th>
-                <th style="width: 30%">Other user</th>
-                <th>Change in other person's balance</th>
-                <th style="width: 10%"></th>
-                <th style="width: 10%"></th>
+                <th style="width: 35%">Change in your balance</th>
+                <th style="width: 35%">Other user</th>
+{#                <th>Change in other person's balance</th>#}
+                <th style="width: 5%"></th>
+                <th style="width: 5%"></th>
             </tr>
         </table>
     </div>

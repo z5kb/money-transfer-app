@@ -6,18 +6,20 @@
     <script src="/static/js/login.js"></script>
     <link rel="stylesheet" href="/static/css/login.css">
 
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <p>
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-            </p>
-        {% endif %}
-    {% endwith %}
+    <div id="flashedMessagesDiv">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <p>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </p>
+            {% endif %}
+        {% endwith %}
+    </div>
 </head>
 
-<body onload="initFocus();">
+<body onload="initFocus(); hideFlashedMessages();">
     <div class="registerDiv">
         <h1 style="font-size: 2vw">Log in</h1>
         <p style="font-size: 1.3vw">Fill in the form to log in your account.</p>
