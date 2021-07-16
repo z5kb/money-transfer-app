@@ -6,14 +6,19 @@
     <script src="https://www.paypalobjects.com/api/checkout.js"></script>
     <script src="/static/js/paypal.js"></script>
     <script src="/static/js/jquery.js"></script>
+    <link rel="stylesheet" href="/static/css/paypal.css">
 </head>
-<body>
-    <div id="amountDiv">
-        <label>Amount (in EUR):<br>
-            <input id="amount" type="text" placeholder="Enter amount..." name="amount">
-        </label><br><br>
-    </div>
+<body onload="initFocus();">
+    <div id="addMoneyDiv">
+        <h1>Add money</h1>
+        <hr>
 
-    <div id="paypal-button" onclick=""></div>
+        <div id="amountDiv">
+            <label for="amount"><b>Amount (in EUR)</b></label>
+            <input id="amount" type="text" placeholder="Enter amount..." name="amount">
+        </div>
+
+        <div id="paypal-button" onclick=""></div>
+    </div>
 </body>
 </html>

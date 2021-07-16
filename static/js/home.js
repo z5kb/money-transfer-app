@@ -1,7 +1,7 @@
 let users;
 let usersGotLoaded = 0;
 let transferReceiverGotChosen = 0;
-let ping;
+let transactions;
 
 function loadUsers() {
     $.when(
@@ -73,41 +73,6 @@ function dynamicSearch() {
     }
 }
 
-// function refreshPage() {
-//     setInterval(function() {
-//         while(1) {
-//             $.when(
-//                 pingServer()
-//             ).then(function() {
-//                 if(ping === 1) {
-//                     window.location.reload(true)
-//                 } else {
-//                     ping = 0
-//                 }
-//             })
-//         }
-//     }, 5000)
-// }
-//
-// // get the users from the server
-// function pingServer() {
-//     let deferred = $.Deferred();
-//     $.ajax({
-//         url: "http://127.0.0.1:5000/api/ping",
-//         dataType: "json",
-//         type: "GET",
-//         success: function(result) {
-//             ping = result;
-//             deferred.resolve();
-//         },
-//         error: function() {
-//             ping = "error";
-//             deferred.resolve();
-//         }
-//     });
-//     return deferred.promise();
-// }
-
 // toggle the visibility of the settingsDropdownContents div
 function toggleSettingsDropdownContentsVisibility() {
     document.getElementById("settingsDropdownContents").classList.toggle("showSettingsDropdownContents");
@@ -142,4 +107,182 @@ function hideFlashedMessages() {
     setTimeout(function() {
         $("#flashedMessagesDiv").remove();
     }, 3000);
+}
+
+function loadTransactions() {
+    $.when(
+        getTransactions()
+    ).then(function() {
+        renderTransactions();
+    })
+}
+
+// get the users from the server
+function getTransactions() {
+    let deferred = $.Deferred();
+    $.ajax({
+        url: "http://127.0.0.1:5000/api/transactions",
+        dataType: "json",
+        type: "GET",
+        success: function(result) {
+            transactions = result;
+            deferred.resolve();
+        },
+        error: function() {
+            transactions = [];
+            deferred.resolve();
+        }
+    });
+    return deferred.promise();
+}
+
+// render the users on the page
+function renderTransactions() {
+    for(let i = 0; i < transactions.length; i++) {
+        if(transactions[i][6] === "== user1") {
+            prepareToRenderTransaction(transactions[i][3], transactions[i][4], transactions[i][5], transactions[i][0],
+                transactions[i][1], 1);
+        } else if(transactions[i][6] === "!= user1") {
+            prepareToRenderTransaction(transactions[i][2], transactions[i][5], transactions[i][4], transactions[i][0],
+                transactions[i][1], 0);
+        }
+    }
+}
+
+function prepareToRenderTransaction(otherPerson, currentUserChange, otherUserChange, transactionId, transactionStatus,
+                                    currentUserIsInitiator) {
+    let currentUserChangeBackup = currentUserChange;
+
+    // append + in front of currentUserChange if it is not < 0
+    if (currentUserChange.toString()[0] !== "-") {
+        currentUserChange = "+ " + currentUserChange.toString();
+    } else {
+        let currentUserChangeWithoutMinus = currentUserChange.toString().slice(1);
+        currentUserChange = "- " + currentUserChangeWithoutMinus
+    }
+
+    // append " " between the minus and otherUserChange if otherUserChange < 0
+    if (otherUserChange.toString()[0] !== "-") {
+        otherUserChange = "+ " + otherUserChange.toString();
+    } else {
+        let otherUserChangeWithoutMinus = otherUserChange.toString().slice(1);
+        otherUserChange = "- " + otherUserChangeWithoutMinus
+    }
+
+    // render the transaction
+    if(transactionStatus === "frozen") {
+        renderTransaction(otherPerson, currentUserChange, otherUserChange, transactionId, currentUserChangeBackup,
+            "cadetblue", "cadetblue", "cadetblue",
+            "cadetblue", "background: cadetblue", currentUserIsInitiator, 0);
+    } else if(transactionStatus === "accepted") {
+        renderTransaction(otherPerson, currentUserChange, otherUserChange, transactionId, currentUserChangeBackup,
+            "mediumseagreen", "mediumseagreen", "mediumseagreen",
+            "mediumseagreen", "background: mediumseagreen", currentUserIsInitiator, 0);
+    } else if(transactionStatus === "rejected") {
+        renderTransaction(otherPerson, currentUserChange, otherUserChange, transactionId, currentUserChangeBackup,
+            "indianred", "indianred", "indianred",
+            "indianred", "background: indianred", currentUserIsInitiator, 0);
+    } else {
+        renderTransaction(otherPerson, currentUserChange, otherUserChange, transactionId, currentUserChangeBackup,
+            "indianred", "mediumseagreen", "mediumseagreen",
+            "indianred", "", currentUserIsInitiator, 1);
+    }
+}
+
+function renderTransaction(otherPerson, currentUserChange, otherUserChange, transactionId, currentUserChangeBackup,
+                                 backgroundOneOne, backgroundOneTwo, backgroundTwoOne, backgroundTwoTwo, trStyle,
+                                 currentUserIsInitiator, transactionIsOpen) {
+    if(transactionIsOpen === 1) {
+        if (currentUserIsInitiator === 1) {
+            // current user is the transfer initiator
+            if (currentUserChangeBackup < 0) {
+                renderOpenTransactionWhereUserIsInitiator(otherPerson, backgroundOneOne, currentUserChange,
+                    transactionId, trStyle);
+            } else {
+                renderOpenTransactionWhereUserIsInitiator(otherPerson, backgroundOneTwo, currentUserChange,
+                    transactionId, trStyle);
+            }
+        } else {
+            // current user is NOT the transfer initiator
+            if (currentUserChangeBackup < 0) {
+                renderOpenTransactionWhereUserIsNotInitiator(otherPerson, backgroundOneOne, currentUserChange,
+                    transactionId, trStyle);
+            } else {
+                renderOpenTransactionWhereUserIsNotInitiator(otherPerson, backgroundTwoOne, currentUserChange,
+                    transactionId, trStyle);
+            }
+        }
+    } else {
+        // transaction is NOT open
+        if (currentUserIsInitiator === 1) {
+            // current user is the transfer initiator
+            renderNotOpenTransaction(otherPerson, currentUserChangeBackup, backgroundOneOne,
+                backgroundTwoOne, currentUserChange, transactionId, trStyle);
+        } else {
+            // current user is NOT the transfer initiator
+            renderNotOpenTransaction(otherPerson, currentUserChangeBackup, backgroundOneOne,
+                backgroundTwoOne, currentUserChange, transactionId, trStyle);
+        }
+    }
+}
+
+function renderOpenTransactionWhereUserIsInitiator(otherPerson, background, currentUserChange, transactionId, trStyle) {
+    $('#transactionsTable tr:last').after(
+        '<tr style="' + trStyle + '">' +
+        '<td style="background: ' + background + '; opacity: 0.9">' + currentUserChange + ' EUR</td>' +
+        '<td>' + otherPerson + '</td>' +
+
+        '<td style="width: 12.5%"></td>' +
+
+        '<td style="width: 12.5%">' +
+        '<form action="/api/complete_transaction" method="post">' +
+        '<button type="submit" style="width: 80%" name="answer" value="reject;' + transactionId + '">Reject</button>' +
+        '</form>' +
+        '</td>' +
+        '</tr>'
+    );
+}
+
+function renderOpenTransactionWhereUserIsNotInitiator(otherPerson, background, currentUserChange, transactionId, trStyle) {
+    $('#transactionsTable tr:last').after(
+        '<tr style="' + trStyle + '">' +
+        '<td style="background: ' + background + '; opacity: 0.9">' + currentUserChange + ' EUR</td>' +
+        '<td>' + otherPerson + '</td>' +
+
+        '<td style="width: 12.5%">' +
+        '<form action="/api/complete_transaction" method="post">' +
+        '<button type="submit" style="width: 80%" name="answer" value="accept;' + transactionId + '">Accept</button>' +
+        '</form>' +
+        '</td>' +
+
+        '<td style="width: 12.5%">' +
+        '<form action="/api/complete_transaction" method="post">' +
+        '<button type="submit" style="width: 80%" name="answer" value="reject;' + transactionId + '">Reject</button>' +
+        '</form>' +
+        '</td>' +
+        '</tr>'
+    );
+}
+
+function renderNotOpenTransaction(otherPerson, currentUserChangeBackup, backgroundOneOne, backgroundTwoOne,
+                                                      currentUserChange, transactionId, trStyle) {
+    if(currentUserChangeBackup < 0) {
+        $('#transactionsTable tr:last').after(
+            '<tr style="' + trStyle + '">' +
+            '<td style="background: ' + backgroundOneOne + '; opacity: 0.9">' + currentUserChange + ' EUR</td>' +
+            '<td>' + otherPerson + '</td>' +
+            '<td style="width: 12.5%"></td>' +
+            '<td style="width: 12.5%"></td>' +
+            '</tr>'
+        );
+    } else {
+        $('#transactionsTable tr:last').after(
+            '<tr style="' + trStyle + '">' +
+            '<td style="background: ' + backgroundTwoOne + '; opacity: 0.9">' + currentUserChange + ' EUR</td>' +
+            '<td>' + otherPerson + '</td>' +
+            '<td style="width: 12.5%"></td>' +
+            '<td style="width: 12.5%"></td>' +
+            '</tr>'
+        );
+    }
 }

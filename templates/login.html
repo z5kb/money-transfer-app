@@ -3,30 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
+    <script src="/static/js/login.js"></script>
+    <link rel="stylesheet" href="/static/css/login.css">
+
+    <div id="flashedMessagesDiv">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <p>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </p>
+            {% endif %}
+        {% endwith %}
+    </div>
 </head>
 
-<body>
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <p>
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-            </p>
-        {% endif %}
-    {% endwith %}
+<body onload="initFocus(); hideFlashedMessages();">
+    <div class="registerDiv">
+        <h1 style="font-size: 2vw">Log in</h1>
+        <p style="font-size: 1.3vw">Fill in the form to log in your account.</p>
+        <hr>
 
-    <form method="post">
-        <label>Username
-            <input type="text" name="username" required>
-        </label><br><br>
+        <form method="post">
+            <label for="email" style="font-size: 1.4vw"><b>Email</b></label>
+            <input id="email" type="text" name="email" placeholder="Enter an email..." required>
 
-        <label>Password
-            <input type="password" name="password" required>
-        </label><br><br>
+            <label for="password" style="font-size: 1.4vw"><b>Password</b></label>
+            <input id="password" type="password" name="password" placeholder="Enter a password..." required>
 
-        <input type="submit" value="Log in">
-        <a href="/register">Don't have an account?</a>
-    </form>
+            <input type="submit" value="Log in" class="registerSubmitButton">
+        </form>
+
+        <hr>
+        <a href="/register"></a>
+        <p>Don't have an account? <a href="/register">Register</a>.</p>
+    </div>
 </body>
 </html>

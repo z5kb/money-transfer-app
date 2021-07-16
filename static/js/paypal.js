@@ -25,7 +25,8 @@ paypal.Button.render({
         }).then(function() {
             $("#paypal-button").remove();
             $("#amountDiv").remove();
-            $("body").append('<p>Purchase completed.</p>').append('<a href="/h">Go back</a>')
+            $("#addMoneyDiv").remove();
+            $("body").append('<p>Purchase completed.</p>').append('<button onclick="window.close();">Close</a>')
         });
     }
 }, '#paypal-button');

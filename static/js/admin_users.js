@@ -5,6 +5,7 @@ function loadUsers() {
         getUsers()
     ).then(function() {
         renderUsers();
+        $("#searchUsersInput").focus();
     })
 }
 

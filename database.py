@@ -9,7 +9,6 @@ db_string = "postgresql://telebidPractice:telebidPractice@localhost"
 db = create_engine(db_string)
 
 
-# TODO replace id with UUID in all tables
 class Database:
     def __init__(self):
         db.execute("DROP TABLE IF EXISTS Transactions;")
@@ -26,7 +25,7 @@ class Database:
                    "has_to_reload_page bool default false"
                    ");")
 
-        user1 = User(1, 'first@fake.org', generate_password_hash('1'), "user", 0)
+        user1 = User(1, 'first@fake.org', generate_password_hash('1'), "user", 15.45)
         self.add_user(user1)
         user2 = User(2, 'second@fake.org', generate_password_hash('2'), "user", 5)
         self.add_user(user2)
@@ -39,8 +38,7 @@ class Database:
 
         # user1 is the initiator of the transfer, user2 is the receiver
         db.execute("DROP TYPE IF EXISTS transaction_status_enum;")
-        # TODO check if we need the "failed" option
-        db.execute("CREATE TYPE transaction_status_enum AS ENUM ('open', 'closed', 'frozen');")
+        db.execute("CREATE TYPE transaction_status_enum AS ENUM ('open', 'accepted', 'rejected', 'frozen');")
         db.execute("CREATE TABLE IF NOT EXISTS Transactions ("
                    "id serial not null primary key,"
                    "status transaction_status_enum default 'open',"
@@ -63,11 +61,16 @@ class Database:
                    "amount float not null,"
                    "status paypal_transactions_status_enum,"
                    "timestamp timestamp default current_timestamp,"
-                   "FOREIGN KEY(user_id) REFERENCES Users(id)"
+                   "FOREIGN KEY(user_id) REFERENCES Users(id),"
+                   "paypal_id text"
                    ");")
         db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 1.36, 'completed');")
         db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 2.73, 'completed');")
-        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 345.14, 'completed');")
+        db.execute("INSERT INTO PaypalTransactions(user_id, amount, status) VALUES(1, 345, 'completed');")
+
+        # prepare statements
+        # db.execute("PREPARE close_transaction(transaction_status_enum, int) AS "
+        #            "UPDATE Transactions SET status = $1 WHERE id = $2;")
 
     @staticmethod
     def add_user(user):
@@ -91,9 +94,8 @@ class Database:
             return User(r[0], r[1], r[2], r[3], r[4])
         return None
 
-    # TODO change this (returning lists of users' data, not users)
     @staticmethod
-    def get_users():
+    def get_users_as_list():
         rows = db.execute("SELECT * FROM Users ORDER BY id;")
 
         users = []
@@ -102,7 +104,6 @@ class Database:
                 users.append([r[0], r[1], r[3], r[4]])
         return users
 
-    # TODO change this (returning lists of users' data, not users)
     @staticmethod
     def get_users_of_current_user(current_user):
         rows = db.execute("SELECT * FROM Users;")
@@ -143,8 +144,20 @@ class Database:
 
         transactions = []
         for r in rows:
-            transactions.append([r[0], r[1], r[2], r[3], r[4], r[5]])
+            if current_user.get_id() == r[2]:
+                transactions.append([r[0], r[1], r[2], Database.get_user_email_by_id(r[3]), r[4], r[5], "== user1"])
+            elif current_user.get_id() == r[3]:
+                transactions.append([r[0], r[1], Database.get_user_email_by_id(r[2]), r[3], r[4], r[5], "!= user1"])
         return transactions
+
+    @staticmethod
+    def get_user_email_by_id(u_id):
+        rows = db.execute("SELECT email FROM Users WHERE id = {};"
+                          .format(u_id))
+
+        for r in rows:
+            return r[0]
+        return None
 
     @staticmethod
     def create_transaction(t):
@@ -164,8 +177,8 @@ class Database:
             user2 = Database.get_user_by_id(transaction.get_user2_id())
 
             # update users' money balances
-            user1.set_balance(user1.get_balance() + transaction.get_user1_change())
-            user2.set_balance(user2.get_balance() + transaction.get_user2_change())
+            user1.set_balance(round(user1.get_balance() + transaction.get_user1_change(), 2))
+            user2.set_balance(round(user2.get_balance() + transaction.get_user2_change(), 2))
 
             # validate new money balances balances
             if user1.get_balance() < 0 or user2.get_balance() < 0:
@@ -176,7 +189,18 @@ class Database:
             Database.update_user_balance(user2)
 
         # close transaction
-        db.execute("UPDATE Transactions SET status = 'closed' WHERE id = {};".format(transaction_id))
+        db.execute("UPDATE Transactions SET status = '{}' WHERE id = {};".format(action + "ed", transaction_id))
+
+        # try:
+        #     print("in try")
+        #     db.execute("EXECUTE close_transaction('{}', {})".format(action + "ed", int(transaction_id)))
+        # except Exception as e:
+        #     print("in except: " + str(e))
+        #     db.execute("PREPARE close_transaction(transaction_status_enum, int) AS "
+        #                "UPDATE Transactions SET status = $1 WHERE id = $2;")
+        #     db.execute("EXECUTE close_transaction('{}', {})".format(action + "ed", int(transaction_id)))
+        # print("outside of try-except")
+
         return True
 
     @staticmethod
@@ -189,6 +213,7 @@ class Database:
     def delete_user_by_id(user_id):
         # delete user's transactions
         Database.delete_user_transactions_by_user_id(user_id)
+        Database.delete_user_paypal_transactions_by_user_id(user_id)
 
         db.execute("DELETE FROM Users WHERE id = {};".format(user_id))
         return True
@@ -204,6 +229,12 @@ class Database:
     def delete_user_transactions_by_user_id(user_id):
         db.execute("DELETE FROM Transactions WHERE user1_id = {} OR user2_id = {};"
                    .format(user_id, user_id))
+        return True
+
+    @staticmethod
+    def delete_user_paypal_transactions_by_user_id(user_id):
+        db.execute("DELETE FROM PaypalTransactions WHERE user_id = {};"
+                   .format(user_id))
         return True
 
     @staticmethod
@@ -233,7 +264,7 @@ class Database:
 
         transactions = []
         for r in rows:
-            transactions.append([r[2], r[3], str(r[4])])
+            transactions.append([r[2], r[3], str(r[4]), r[5]])
         return transactions
 
     @staticmethod
@@ -242,7 +273,7 @@ class Database:
 
         transactions = []
         for r in rows:
-            transactions.append([r[0], r[1], r[2], r[3], str(r[4])])
+            transactions.append([r[0], r[1], r[2], r[3], str(r[4]), r[5]])
         return transactions
 
     @staticmethod
@@ -261,8 +292,10 @@ class Database:
 
     @staticmethod
     def update_paypal_transaction(t):
-        db.execute("UPDATE PaypalTransactions SET user_id = {}, amount = {}, status = '{}' WHERE id = {};"
-                   .format(t.get_user_id(), t.get_amount(), t.get_status(), t.get_id()))
+        db.execute("UPDATE PaypalTransactions "
+                   "SET user_id = {}, amount = {}, status = '{}', paypal_id = '{}' "
+                   "WHERE id = {};"
+                   .format(t.get_user_id(), t.get_amount(), t.get_status(), t.get_paypal_id(), t.get_id()))
         return True
 
     @staticmethod

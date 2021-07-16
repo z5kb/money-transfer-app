@@ -8,17 +8,18 @@
     <link rel="stylesheet" href="/static/css/admin_paypal_transactions.css">
 </head>
 <body onload="loadTransactions()">
-    <input type="text" id="searchPaypalTransactionsInput" onkeyup="dynamicSearch()" placeholder="Search paypal transactions by id..."
-           title="Type in a name">
+    <input type="text" id="searchPaypalTransactionsInput" onkeyup="dynamicSearch()"
+           placeholder="Search paypal transactions by paypal_id...">
 
-    <div class="scrollable">
+    <div{# class="scrollable"#}>
         <table id="paypalTransactionsTable">
             <tr class="header">
                 <th onclick="sortTable(0)">id</th>
-                <th onclick="sortTable(1)">user_id</th>
-                <th onclick="sortTable(2)">amount</th>
-                <th onclick="sortTable(3)">status</th>
-                <th onclick="sortTable(4)">timestamp</th>
+                <th onclick="sortTable(1)">paypal_id</th>
+                <th onclick="sortTable(2)">user_id</th>
+                <th onclick="sortTable(3)">amount</th>
+                <th onclick="sortTable(4)">status</th>
+                <th onclick="sortTable(5)">timestamp</th>
             </tr>
         </table>
     </div>

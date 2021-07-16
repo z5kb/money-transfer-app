@@ -7,15 +7,27 @@
     <script src="/static/js/settings.js"></script>
     <link rel="stylesheet" href="/static/css/settings.css">
 </head>
-<body>
+<body onload="hideFlashedMessages();">
     <div class="sidenav">
-        <a onclick="renderProfile({{ user.get_id() }})">Profile</a>
-        <a onclick="loadPaypalTransactions()">PayPal Transactions</a>
+        <a onclick="renderProfile({{ user.get_id() }}, '{{ user.get_email() }}');">Profile</a>
+        <a onclick="loadPaypalTransactions();">PayPal Transactions</a>
+    </div>
+
+    <div id="flashedMessagesDiv" class="main">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <p>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </p>
+            {% endif %}
+        {% endwith %}
     </div>
 
     <div id="main" class="main">
-        <h2>Sidenav Example</h2>
-        <p>This sidenav is always shown.</p>
+        <h2>Settings</h2>
+        <p>Choose a section from the side navigation menu on the left</p>
     </div>
 </body>
 </html>

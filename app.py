@@ -38,15 +38,7 @@ def root():
 @login_required
 @roles_required(("user",))
 def home_get():
-    # add a string to the list which classifies whether the current user is the initiator of the offer or not
-    transactions = db.get_transactions_of_current_user(current_user)
-    for t in transactions:
-        if current_user.get_id() == t[2]:
-            t.append("current user is initiator")
-        else:
-            t.append("current user is not initiator")
-
-    return render_template("home.html", user=current_user, transactions=transactions)
+    return render_template("home.html", user=current_user)
 
 
 @app.route("/h/settings", methods=["GET"])
@@ -67,6 +59,20 @@ def settings_post():
             # get data from form
             new_email = request.form["new_email"]
             new_pass = request.form["new_pass"]
+
+            # validate email formatting
+            try:
+                parsed_email = new_email.split("@", 1)
+                assert "@" not in parsed_email[0]
+                assert "@" not in parsed_email[1]
+                assert "." in parsed_email[1]
+
+                parsed_address = parsed_email[1].split(".", 1)
+                assert len(parsed_address[0]) > 0
+                assert len(parsed_address[1]) > 0
+            except:
+                flash("This email address doesn't seem right.")
+                return redirect("/h/settings")
 
             # update user
             user = current_user
@@ -116,13 +122,13 @@ def login_get():
 
 @app.route("/login", methods=["POST"])
 def login_post():
-    name = request.form["username"]
+    email = request.form["email"]
     password = request.form["password"]
 
-    if not name or not password:
-        return "Username and password can't be empty"
+    if not email or not password:
+        return "Email and password can't be empty"
 
-    user = db.get_user_by_email(name)
+    user = db.get_user_by_email(email)
     if user is None:
         flash("User does not exist")
         return redirect("/login")
@@ -144,13 +150,24 @@ def register_get():
 
 @app.route("/register", methods=["POST"])
 def register_post():
-    if not request.form["username"] or not request.form["password"]:
+    if not request.form["email"] or not request.form["password"]:
         flash("Username and password should be filled")
         return redirect("/register")
 
-    email = request.form["username"]
+    email = request.form["email"]
     password = generate_password_hash(request.form["password"])
     user = User(db.get_users_count(), email, password, "user", 0)
+
+    # validate email formatting
+    try:
+        parsed_email = email.split("@", 1)
+
+        assert "@" not in parsed_email[0]
+        assert "@" not in parsed_email[1]
+        assert "." in parsed_email[1]
+    except:
+        flash("This email address doesn't seem right.")
+        return redirect("/register")
 
     if db.get_user_by_email(email) is not None:
         flash("User already exists")
@@ -163,6 +180,7 @@ def register_post():
 
 @app.route("/api/users", methods=["GET"])
 @login_required
+@roles_required(("user",))
 def api_get_users():
     response = app.response_class(
         response=json.dumps(db.get_users_of_current_user(current_user), indent=4),
@@ -174,6 +192,7 @@ def api_get_users():
 
 @app.route("/api/paypal_transactions", methods=["GET"])
 @login_required
+@roles_required(("user",))
 def api_get_paypal_transactions():
     response = app.response_class(
         response=json.dumps(db.get_paypal_transactions_as_list_of_current_user(current_user), indent=4),
@@ -188,7 +207,7 @@ def api_get_paypal_transactions():
 @roles_required(("admin",))
 def api_admin_get_users():
     response = app.response_class(
-        response=json.dumps(db.get_users(), indent=4),
+        response=json.dumps(db.get_users_as_list(), indent=4),
         status=200,
         mimetype="application/json"
     )
@@ -314,6 +333,7 @@ def api_admin_unfreeze_user():
 
 @app.route("/api/transactions", methods=["GET"])
 @login_required
+@roles_required(("user",))
 def api_get_transactions():
     response = app.response_class(
         response=json.dumps(db.get_transactions_of_current_user(current_user), indent=4),
@@ -335,6 +355,8 @@ def api_admin_freeze_transaction():
         assert transaction is not None
 
         # update transaction's status
+        if transaction.get_status() != "open":
+            return "The transaction is not open and you can not freeze it."
         transaction.set_status("frozen")
 
         # commit changes to db
@@ -356,6 +378,8 @@ def api_admin_unfreeze_transaction():
         assert transaction is not None
 
         # update transaction's status
+        if transaction.get_status() != "frozen":
+            return "The transaction is not open and you can not unfreeze it."
         transaction.set_status("open")
 
         # commit changes to db
@@ -367,12 +391,35 @@ def api_admin_unfreeze_transaction():
 
 @app.route("/api/create_transaction", methods=["POST"])
 @login_required
+@roles_required(("user",))
 def api_create_transaction():
     try:
         user1_change = request.form["change_in_balance"]
-        user2_id = request.form["user2_id"]
+        try:
+            user2_id = request.form["user2_id"]
+        except:
+            flash("Please select the user you want to transfer money with.")
+            return redirect("/h")
     except:
-        return "An answer to the transaction is expected"
+        return "error in post request"
+
+    if "." in user1_change:
+        parsed_user1_change = user1_change.split(".")
+        if len(parsed_user1_change[1]) > 2:
+            flash("You can only enter a number with two digits after the decimal point.")
+            return redirect("/h")
+
+    try:
+        assert type(float(user1_change)) is float
+    except:
+        flash(user1_change + " is not a valid number")
+        return redirect("/h")
+
+    try:
+        assert type(int(user2_id)) is int
+        assert db.get_user_by_id(user2_id) is not None
+    except:
+        return "error in post request"
 
     user2_change = str(-float(user1_change))
     t = Transaction(db.get_transactions_count(), "open", current_user.get_id(), user2_id, user1_change, user2_change)
@@ -385,10 +432,9 @@ def api_create_transaction():
     return redirect("/h")
 
 
-# TODO check if the user is accepting his own transaction
-# TODO add asserts
 @app.route("/api/complete_transaction", methods=["POST"])
 @login_required
+@roles_required(("user",))
 def api_complete_transaction(answer=None):
     try:
         if answer is None:
@@ -402,9 +448,14 @@ def api_complete_transaction(answer=None):
 
     transaction = db.get_transaction_by_id(parsed_answer[1])
 
+    # check if user is trying to accept a transfer he is not participating in
+    if current_user.get_id() != transaction.get_user1_id() and current_user.get_id() != transaction.get_user2_id():
+        flash("You can not accept a transaction you are not participating in.")
+        return redirect("/h")
+
     # check if the initiator is trying to accept his own transfer
-    if current_user.get_id() == transaction.get_user1_id() and parsed_answer == "accept":
-        flash("You can't accept your own transfer.")
+    if current_user.get_id() == transaction.get_user1_id() and parsed_answer[0] == "accept":
+        flash("You can't accept a transaction you initiated.")
         return redirect("/h")
 
     # check if the transaction is open
@@ -428,12 +479,14 @@ def api_complete_transaction(answer=None):
 
 @app.route("/h/paypal")
 @login_required
+@roles_required(("user",))
 def paypal():
     return render_template("paypal.html")
 
 
 @app.route("/api/payment", methods=["POST"])
 @login_required
+@roles_required(("user",))
 def paypal_start_payment():
     try:
         temp = request.form["0"]
@@ -462,7 +515,6 @@ def paypal_start_payment():
             print("Payment success")
             t = PaypalTransaction(db.get_paypal_transactions_count(), current_user.get_id(), amount)
             db.add_paypal_transaction(t)
-            print("committed to db")
         else:
             print(p.error)
         return jsonify({"paymentID": p.id})
@@ -472,9 +524,10 @@ def paypal_start_payment():
 
 @app.route("/api/execute", methods=["POST"])
 @login_required
+@roles_required(("user",))
 def paypal_execute_payment():
     success = False
-    print(request.form["paymentID"])
+    payment_id = request.form["paymentID"]
     p = paypalrestsdk.Payment.find(request.form["paymentID"])
     if p.execute({"payer_id": request.form["payerID"]}):
         print("Execute success")
@@ -483,6 +536,7 @@ def paypal_execute_payment():
         # update transaction
         t = db.get_latest_paypal_transaction_by_user_id(current_user.get_id())
         t.set_status("completed")
+        t.set_paypal_id(payment_id)
         db.update_paypal_transaction(t)
 
         # update user
@@ -498,6 +552,7 @@ def paypal_execute_payment():
 @login_required
 def unauthorized():
     if current_user.get_role() == "frozen":
+        logout_user()
         return render_template("frozen.html")
     return render_template("unauthorized.html")
 
